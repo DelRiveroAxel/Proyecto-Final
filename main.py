@@ -7,3 +7,8 @@
 #------CAMBIOS------
 
 #29-10-2025: Inicio de la codificación del proyecto (ADR)
+
+
+#Probando ADR
+def main():
+    print("Hola, este es el inicio del proyecto ADR.")
