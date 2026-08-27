@@ -1,0 +1,10 @@
+CMD como terminal Predeterminana en .PY:
+	Terminal: Select Default Profile
+
+Crear un Entorno Virtual y activar:
+	python -m venv tutorial-env  #Crear
+	tutorial-env\Scripts\activate  #Activar
+
+Permisos de PowerShell para crear Entornos Virtuales:
+	Set-ExecutionPolicy RemoteSigned
+
