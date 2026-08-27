@@ -7,6 +7,7 @@
 #------CAMBIOS------
 
 #29-10-2025: Inicio de la codificación del proyecto (ADR)
+#27-08-2026: Creado del env y principios de Main (ADR)
 
 
 #Probando ADR
