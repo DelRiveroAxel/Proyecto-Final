@@ -1,1 +1,1 @@
--27/08/2026 arrancamos con esto
+-27/08/2026 arrancamos con esto (ADR)
