@@ -8,7 +8,7 @@
 
 #29-10-2025: Inicio de la codificación del proyecto (ADR)
 #27-08-2026: Creado del env y principios de Main (ADR)
-
+#27-08-2026: Ivan fue al dentista 
 
 #Probando ADR
 def main():
