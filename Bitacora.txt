@@ -1,4 +1,0 @@
--27/08/2026 arrancamos con esto (ADR)
-    *Creación de entorno virtual Fianl-env
-    *Instalación de Django e actualización de pip
-
