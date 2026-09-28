@@ -37,7 +37,16 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'core',
+    'users',
 ]
+
+AUTH_USER_MODEL = 'users.User'
+
+LOGIN_URL = '/users/login/' #te redirecciona a la pagina de login si no estas logueado
+LOGIN_REDIRECT_URL = '/users/dashboard/' #una vez logueado te redirecciona a la pagina de dashboard
+LOGOUT_REDIRECT_URL = '/users/login/' #una vez deslogueado te redirecciona a la pagina de login
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
