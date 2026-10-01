@@ -28,3 +28,9 @@ def login_view(request): #creo la vista para el login
             form = loginForm()                 #creo una instancia vacia del formulario de login
 
         return render(request, 'users/login.html', {'form': form}) #renderizo la vista de login con el formulario
+
+@login_required(login_url='login') #decorador para proteger la vista, si el usuario no esta autenticado lo redirecciona a la vista de login
+def  logout_view(request): #creo la vista para el logout
+    logout(request) #cierro la sesion del usuario
+    messages.success(request, 'Has cerrado sesión correctamente') #muestro un mensaje de exito
+    return redirect('login') #redirecciono a la vista de login
