@@ -1,0 +1,49 @@
+{% extends "panel/base_panel.html" %}
+{% block titulo_panel %}Carrusel del inicio{% endblock %}{% block titulo_top %}Carrusel del inicio de la tienda{% endblock %}
+{% block contenido %}
+<div class="ad-head"><div><h1>Carrusel del inicio</h1><p>Las diapositivas grandes que ven los clientes arriba del catálogo. Pasan solas cada 6 segundos.</p></div>
+  <div class="ad-head-acc"><a class="ik-btn ik-btn-ghost" href="{% url 'tienda:catalogo' %}" target="_blank"><span class="material-symbols-outlined">visibility</span>Ver en la tienda</a>
+    <a class="ik-btn ik-btn-primary" href="{% url 'panel:slide_nueva' %}"><span class="material-symbols-outlined">add</span>Nueva diapositiva</a></div></div>
+
+{% if automaticos %}
+<div class="ik-msgs"><div class="ik-msg">Todavía no hay diapositivas visibles, así que el carrusel muestra solo los productos con stock:
+  {% for r in automaticos %}<b>{{ r.nombre }}</b>{% if not forloop.last %}, {% endif %}{% endfor %}. Creá una diapositiva para elegir vos qué se muestra.</div></div>
+{% endif %}
+
+{% if slides %}
+<div class="ad-slides">
+  {% for s in slides %}
+  <div class="ad-slide {% if not s.activo %}is-oculta{% endif %}">
+    <div class="ad-slide-mini"><div class="ik-hero ik-hero-mini">{% include "tienda/_slide.html" with on=True foto=s.foto etiqueta=s.etiqueta icono=s.icono titulo=s.titulo texto=s.texto boton=s.boton_texto enlace="#" %}</div></div>
+    <div class="ad-slide-info">
+      <span class="ik-caption">#{{ forloop.counter }}{% if s.receta %} · lleva a {{ s.receta.nombre }}{% elif s.boton_url %} · lleva a {{ s.boton_url }}{% endif %}</span>
+      <b>{{ s.titulo }}</b>
+      {% if s.activo %}<span class="ik-est ik-est-ok">Visible</span>{% else %}<span class="ik-est ik-est-info">Oculta</span>{% endif %}
+    </div>
+    <div class="ad-slide-acc">
+      <form method="post" action="{% url 'panel:slide_accion' s.pk 'subir' %}">{% csrf_token %}<button class="ik-btn ik-btn-icon" {% if forloop.first %}disabled{% endif %} title="Subir" aria-label="Subir"><span class="material-symbols-outlined">arrow_upward</span></button></form>
+      <form method="post" action="{% url 'panel:slide_accion' s.pk 'bajar' %}">{% csrf_token %}<button class="ik-btn ik-btn-icon" {% if forloop.last %}disabled{% endif %} title="Bajar" aria-label="Bajar"><span class="material-symbols-outlined">arrow_downward</span></button></form>
+      <form method="post" action="{% url 'panel:slide_accion' s.pk 'visible' %}">{% csrf_token %}<button class="ik-btn ik-btn-icon" title="{% if s.activo %}Ocultar{% else %}Mostrar{% endif %}" aria-label="{% if s.activo %}Ocultar{% else %}Mostrar{% endif %}"><span class="material-symbols-outlined">{% if s.activo %}visibility_off{% else %}visibility{% endif %}</span></button></form>
+      <a class="ik-btn ik-btn-ghost ik-btn-sm" href="{% url 'panel:slide' s.pk %}">Editar</a>
+      <form method="post" action="{% url 'panel:slide_accion' s.pk 'borrar' %}" onsubmit="return confirm('¿Borrar esta diapositiva?')">{% csrf_token %}<button class="ik-btn ik-btn-icon ik-quitar" title="Borrar" aria-label="Borrar"><span class="material-symbols-outlined">delete</span></button></form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="ik-vacio"><span class="material-symbols-outlined">view_carousel</span><h3>No hay diapositivas</h3><p>Creá la primera: elegís un producto y se completa sola.</p>
+  <a class="ik-btn ik-btn-primary" href="{% url 'panel:slide_nueva' %}">Nueva diapositiva</a></div>
+{% endif %}
+
+<div class="ad-panel ik-mt">
+  <div class="ad-panel-h"><h3>Sello redondo</h3><span class="ik-caption">El círculo “Desde … IURKO” que aparece a la derecha del carrusel</span></div>
+  <form method="post" class="ad-panel-b ik-form">{% csrf_token %}
+    <div class="ad-cols-3 ad-cols">
+      <div class="ik-field"><label class="ik-check" style="margin-top:1.9rem">{{ sello.mostrar_sello }} Mostrar el sello</label></div>
+      <div class="ik-field"><label for="{{ sello.anio_fundacion.id_for_label }}">{{ sello.anio_fundacion.label }}</label>{{ sello.anio_fundacion }}</div>
+      <div class="ik-field"><label for="{{ sello.sello_linea.id_for_label }}">{{ sello.sello_linea.label }}</label>{{ sello.sello_linea }}</div>
+    </div>
+    <button class="ik-btn ik-btn-ghost">Guardar sello</button>
+  </form>
+</div>
+{% endblock %}

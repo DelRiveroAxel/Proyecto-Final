@@ -1,0 +1,23 @@
+{% extends "users/base_auth.html" %}
+{% block titulo %}Crear cuenta · Iurko Chacinados{% endblock %}
+{% block card_style %}style="max-width:640px"{% endblock %}
+{% block tarjeta %}
+<div class="ik-auth-brand"><h1>Iurko Chacinados</h1><h2>Crear cuenta</h2><p>Para comprar necesitás una cuenta: así te avisamos el estado de tu pedido.</p></div>
+{% if form.non_field_errors %}<div class="ik-msgs">{% for e in form.non_field_errors %}<div class="ik-msg error">{{ e }}</div>{% endfor %}</div>{% endif %}
+<form method="post" class="ik-form" novalidate>
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ next }}">
+  <div class="ad-cols">
+    {% for campo in form %}
+    <div class="ik-field {% if campo.errors %}has-error{% endif %} {% if campo.name == 'direccion' %}full{% endif %}">
+      <label for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+      {{ campo }}
+      {% if campo.errors %}<span class="ik-error">{{ campo.errors|join:" " }}</span>{% elif campo.name == 'password1' %}<span class="ik-hint">Mínimo 8 caracteres, que no sean solo números.</span>{% elif campo.name == 'email' %}<span class="ik-hint">Lo usamos para avisarte de tus pedidos y para recuperar la contraseña.</span>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  <button class="ik-btn ik-btn-primary ik-btn-block ik-btn-lg ik-mt">Crear mi cuenta</button>
+</form>
+<div class="ik-auth-sep">¿Ya tenés cuenta?</div>
+<p class="ik-auth-alt"><a href="{% url 'login' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Iniciá sesión</a></p>
+{% endblock %}

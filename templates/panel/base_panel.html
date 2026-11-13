@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block titulo %}{% block titulo_panel %}Panel{% endblock %} · Iurko{% endblock %}
+{% block cuerpo %}
+{% with url=request.resolver_match.url_name %}
+<div class="ad-wrap">
+  <aside class="ad-side">
+    <a class="ad-brand" href="{% url 'panel:inicio' %}"><span class="ad-brand-logo"><span class="material-symbols-outlined">factory</span></span><span><b>Iurko</b><small>Panel del productor</small></span></a>
+
+    <div class="ad-grupo">Resumen</div>
+    <a class="ad-link {% if url == 'inicio' %}on{% endif %}" href="{% url 'panel:inicio' %}"><span class="material-symbols-outlined">dashboard</span><span class="t">Inicio</span></a>
+
+    <div class="ad-grupo">Producción</div>
+    <a class="ad-link {% if url == 'tanda_nueva' %}on{% endif %}" href="{% url 'panel:tanda_nueva' %}"><span class="material-symbols-outlined">add_circle</span><span class="t">Cargar tanda</span></a>
+    <a class="ad-link {% if url == 'tandas' or url == 'tanda' %}on{% endif %}" href="{% url 'panel:tandas' %}"><span class="material-symbols-outlined">inventory_2</span><span class="t">Inventario</span>{% if alertas.inventario %}<span class="ad-alerta {% if alertas.vencidas %}ad-alerta-urg{% endif %}" title="{% if alertas.vencen %}Por vencer o vencidas: {% for t in alertas.vencen %}{{ t.codigo }}{% if not forloop.last %}, {% endif %}{% endfor %}. {% endif %}{% if alertas.recetas_bajo %}Poco stock: {% for r in alertas.recetas_bajo %}{{ r.nombre }} ({{ r.stock }}){% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}"><span class="material-symbols-outlined">{% if alertas.vencen %}event_busy{% else %}priority_high{% endif %}</span>{{ alertas.inventario }}</span>{% endif %}</a>
+    <a class="ad-link {% if url == 'recetas' or url == 'receta' or url == 'receta_nueva' %}on{% endif %}" href="{% url 'panel:recetas' %}"><span class="material-symbols-outlined">menu_book</span><span class="t">Recetas y precios</span></a>
+    <a class="ad-link" href="{% url 'panel:etiquetas' %}"><span class="material-symbols-outlined">print</span><span class="t">Imprimir etiquetas</span></a>
+    <a class="ad-link {% if url == 'traza' or url == 'traza_lote' or url == 'traza_tanda' %}on{% endif %}" href="{% url 'panel:traza' %}"><span class="material-symbols-outlined">account_tree</span><span class="t">Trazabilidad</span></a>
+
+    <div class="ad-grupo">Materias primas</div>
+    <a class="ad-link {% if url == 'compra_nueva' %}on{% endif %}" href="{% url 'panel:compra_nueva' %}"><span class="material-symbols-outlined">add_shopping_cart</span><span class="t">Cargar compra</span></a>
+    <a class="ad-link {% if url == 'compras' or url == 'compra' %}on{% endif %}" href="{% url 'panel:compras' %}"><span class="material-symbols-outlined">receipt</span><span class="t">Compras y tickets</span></a>
+    <a class="ad-link {% if url == 'insumos' %}on{% endif %}" href="{% url 'panel:insumos' %}"><span class="material-symbols-outlined">warehouse</span><span class="t">Stock de insumos</span>{% if alertas.insumos_bajo %}<span class="ad-alerta" title="Para reponer: {% for t in alertas.insumos_bajo %}{{ t.nombre }}{% if not forloop.last %}, {% endif %}{% endfor %}"><span class="material-symbols-outlined">priority_high</span>{{ alertas.insumos_bajo|length }}</span>{% endif %}</a>
+
+    <div class="ad-grupo">Ventas</div>
+    <a class="ad-link {% if url == 'pedidos' or url == 'pedido' %}on{% endif %}" href="{% url 'panel:pedidos' %}"><span class="material-symbols-outlined">shopping_cart</span><span class="t">Pedidos</span>{% if alertas.pedidos_nuevos %}<span class="ad-alerta ad-alerta-nuevo" title="Pedidos con novedades"><span class="material-symbols-outlined">notifications_active</span>{{ alertas.pedidos_nuevos }}</span>{% endif %}</a>
+    <a class="ad-link {% if url == 'consultas' %}on{% endif %}" href="{% url 'panel:consultas' %}"><span class="material-symbols-outlined">mail</span><span class="t">Consultas</span>{% if alertas.consultas_nuevas %}<span class="ad-alerta ad-alerta-nuevo" title="Consultas sin responder"><span class="material-symbols-outlined">mark_email_unread</span>{{ alertas.consultas_nuevas }}</span>{% endif %}</a>
+    <a class="ad-link {% if url == 'reportes' %}on{% endif %}" href="{% url 'panel:reportes' %}"><span class="material-symbols-outlined">bar_chart</span><span class="t">Reportes</span></a>
+
+    <div class="ad-grupo">Tienda</div>
+    <a class="ad-link {% if url == 'carrusel' or url == 'slide' or url == 'slide_nueva' %}on{% endif %}" href="{% url 'panel:carrusel' %}"><span class="material-symbols-outlined">view_carousel</span><span class="t">Carrusel del inicio</span></a>
+    <a class="ad-link {% if url == 'nosotros' %}on{% endif %}" href="{% url 'panel:nosotros' %}"><span class="material-symbols-outlined">storefront</span><span class="t">Página "Nosotros"</span></a>
+    <a class="ad-link {% if url == 'preguntas' %}on{% endif %}" href="{% url 'panel:preguntas' %}"><span class="material-symbols-outlined">quiz</span><span class="t">Preguntas frecuentes</span></a>
+    <a class="ad-link" href="{% url 'tienda:catalogo' %}" target="_blank"><span class="material-symbols-outlined">open_in_new</span><span class="t">Ver la tienda</span></a>
+
+    <div class="ad-side-pie">Iurko Chacinados · {% now "Y" %}</div>
+  </aside>
+
+  <div class="ad-cuerpo">
+    <header class="ad-top">
+      <button class="ad-icon ik-burger" type="button" data-menu aria-label="Menú"><span class="material-symbols-outlined">menu</span></button>
+      <h2>{% block titulo_top %}Panel{% endblock %}</h2>
+      <form class="ik-search no-print" action="{% url 'panel:buscar' %}" method="get" style="min-width:240px">
+        <span class="material-symbols-outlined">qr_code_scanner</span>
+        <input name="codigo" inputmode="numeric" placeholder="Buscar código de pieza o tanda" aria-label="Código de pieza o tanda">
+      </form>
+      <button class="ik-btn ik-btn-icon ik-theme" type="button" data-tema aria-label="Cambiar entre modo claro y oscuro" title="Modo claro / oscuro">
+        <span class="material-symbols-outlined luna">dark_mode</span><span class="material-symbols-outlined sol">light_mode</span>
+      </button>
+      <div class="ad-user"><a class="ik-avatar" href="{% url 'clave_cambiar' %}" title="Cambiar contraseña">{{ user.first_name|default:user.username|slice:":1"|upper }}</a><span class="nm">{{ user.nombre_visible }}<small>Productor</small></span>
+        <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="ad-icon" style="width:30px;height:30px" title="Salir" aria-label="Salir"><span class="material-symbols-outlined" style="font-size:1.1rem">logout</span></button></form></div>
+    </header>
+    <main class="ad-main">
+      {% if messages %}<div class="ik-msgs">{% for m in messages %}<div class="ik-msg {{ m.tags }}">{{ m }}</div>{% endfor %}</div>{% endif %}
+      {% block contenido %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% endwith %}
+{% endblock %}

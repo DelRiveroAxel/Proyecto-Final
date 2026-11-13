@@ -1,0 +1,23 @@
+{% extends "users/base_auth.html" %}
+{% block titulo %}Nueva contraseña · Iurko Chacinados{% endblock %}
+{% block tarjeta %}
+{% if validlink %}
+<div class="ik-auth-brand"><h2>Elegí tu contraseña nueva</h2><p>Hola{% if form.user.first_name %} {{ form.user.first_name }}{% endif %}, escribila dos veces.</p></div>
+<form method="post" class="ik-form" novalidate>
+  {% csrf_token %}
+  {% for campo in form %}
+  <div class="ik-field {% if campo.errors %}has-error{% endif %}">
+    <label for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+    <div class="ik-input-icon"><span class="material-symbols-outlined">lock</span>{{ campo }}</div>
+    {% if campo.errors %}<span class="ik-error">{{ campo.errors|join:" " }}</span>{% elif forloop.first %}<span class="ik-hint">Mínimo 8 caracteres, que no sean solo números.</span>{% endif %}
+  </div>
+  {% endfor %}
+  <button class="ik-btn ik-btn-primary ik-btn-block ik-btn-lg">Guardar contraseña</button>
+</form>
+{% else %}
+<div class="ik-auth-brand">
+  <div class="ik-auth-sello"><span class="ik-avatar"><span class="material-symbols-outlined" style="font-size:2.4rem;color:var(--err-fg)">link_off</span></span></div>
+  <h2>El enlace ya no sirve</h2><p>Venció o ya se usó. Pedí uno nuevo.</p></div>
+<a class="ik-btn ik-btn-primary ik-btn-block" href="{% url 'clave_olvidada' %}">Pedir otro enlace</a>
+{% endif %}
+{% endblock %}

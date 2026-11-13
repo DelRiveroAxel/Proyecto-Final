@@ -1,0 +1,55 @@
+{% extends "panel/base_panel.html" %}
+{% load iurko %}
+{% block titulo_panel %}Consultas{% endblock %}{% block titulo_top %}Consultas de clientes{% endblock %}
+{% block contenido %}
+<div class="ad-head"><div><h1>Consultas</h1><p>Lo que escriben los clientes en el formulario “Escribinos” de la tienda. Respondé por correo o WhatsApp y marcala como respondida.</p></div>
+  <div class="ad-head-acc"><a class="ik-btn ik-btn-ghost" href="{% url 'tienda:ayuda' %}#contacto" target="_blank"><span class="material-symbols-outlined">visibility</span>Ver el formulario</a></div></div>
+
+<div class="ad-correo {% if correo_real %}ok{% else %}no{% endif %}">
+  <span class="material-symbols-outlined">{% if correo_real %}mark_email_read{% else %}warning{% endif %}</span>
+  <div class="ad-correo-txt">
+    {% if correo_real %}
+      <b>El correo funciona: sale desde {{ correo_envia }}</b>
+      <span>Las consultas llegan a <b style="display:inline">{{ correo_destino|default:"—" }}</b> (se cambia en <a href="{% url 'panel:nosotros' %}">Página “Nosotros” → Correo</a>). Al tocar “Responder” en tu correo, le contestás directo al cliente.</span>
+    {% else %}
+      <b>Todavía no se mandan correos reales</b>
+      <span>Las consultas igual se guardan acá. Para que también lleguen al correo (y funcione “¿Olvidaste tu contraseña?”), completá <code>EMAIL_USER</code> y <code>EMAIL_PASSWORD</code> en el archivo <code>.env</code> y reiniciá el servidor. Con Gmail, la contraseña es una “contraseña de aplicación” de 16 letras.</span>
+    {% endif %}
+  </div>
+  <form method="post" action="{% url 'panel:correo_prueba' %}">
+    {% csrf_token %}<input type="hidden" name="volver" value="{{ request.get_full_path }}">
+    <button class="ik-btn ik-btn-ghost ik-btn-sm"><span class="material-symbols-outlined">send</span>Enviar correo de prueba</button>
+  </form>
+</div>
+
+<div class="ad-tabs">
+  <a href="?ver=pendientes" class="{% if ver != 'todas' %}on{% endif %}">Sin responder{% if pendientes %} ({{ pendientes }}){% endif %}</a>
+  <a href="?ver=todas" class="{% if ver == 'todas' %}on{% endif %}">Todas</a>
+</div>
+
+<div class="ad-consultas">
+{% for c in consultas %}
+  <article class="ad-consulta {% if c.respondida %}lista{% endif %}">
+    <div>
+      <div class="ad-consulta-de">
+        <b>{{ c.nombre }}</b>
+        <a href="mailto:{{ c.email }}">{{ c.email }}</a>
+        {% if c.telefono %}<span>{{ c.telefono }}</span>{% endif %}
+        <span>{{ c.creado|date:"d/m/Y H:i" }}</span>
+        {% if c.usuario %}<span class="ik-chip">Cliente registrado</span>{% endif %}
+        {% if c.respondida %}<span class="ik-chip">Respondida</span>{% elif not c.correo_enviado %}<span class="ik-chip" title="No se pudo mandar por correo: solo está acá">Solo en el panel</span>{% endif %}
+      </div>
+      <p class="ad-consulta-msg">{{ c.mensaje }}</p>
+    </div>
+    <div class="ad-consulta-acc">
+      <a class="ik-btn ik-btn-primary ik-btn-sm" href="mailto:{{ c.email }}?subject={{ 'Re: tu consulta a Iurko Chacinados'|urlencode }}&body={{ 'Hola '|add:c.nombre|add:', gracias por escribirnos.'|urlencode }}"><span class="material-symbols-outlined">reply</span>Responder por correo</a>
+      {% if c.telefono %}{% whatsapp c.telefono "Hola "|add:c.nombre|add:", te escribimos de Iurko Chacinados por tu consulta." as wa %}{% if wa %}<a class="ik-btn ik-btn-wa ik-btn-sm" href="{{ wa }}" target="_blank" rel="noopener">WhatsApp</a>{% endif %}{% endif %}
+      <form method="post" action="{% url 'panel:consulta_respondida' c.pk %}">{% csrf_token %}<input type="hidden" name="volver" value="{{ request.get_full_path }}">
+        <button class="ik-btn ik-btn-ghost ik-btn-sm" style="width:100%"><span class="material-symbols-outlined">{% if c.respondida %}undo{% else %}done{% endif %}</span>{% if c.respondida %}Volver a pendiente{% else %}Marcar respondida{% endif %}</button></form>
+    </div>
+  </article>
+{% empty %}
+  <div class="ik-vacio"><span class="material-symbols-outlined">inbox</span><h3>{% if ver == 'todas' %}Todavía no llegó ninguna consulta{% else %}No hay consultas sin responder{% endif %}</h3><p>Cuando un cliente escriba en “Escribinos”, aparece acá.</p></div>
+{% endfor %}
+</div>
+{% endblock %}

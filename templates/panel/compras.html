@@ -1,0 +1,23 @@
+{% extends "panel/base_panel.html" %}
+{% load iurko %}
+{% block titulo_panel %}Compras{% endblock %}{% block titulo_top %}Compras de materia prima{% endblock %}
+{% block contenido %}
+<div class="ad-head"><div><h1>Compras y tickets</h1><p>Cada compra guarda su ticket o factura.</p></div>
+  <div class="ad-head-acc"><a class="ik-btn ik-btn-primary" href="{% url 'panel:compra_nueva' %}"><span class="material-symbols-outlined">add</span>Cargar compra</a></div></div>
+<div class="ad-panel">
+  <form class="ad-panel-h" method="get"><h3>{{ compras|length }} compra{{ compras|length|pluralize }}</h3>
+    <label class="ik-search"><span class="material-symbols-outlined">search</span><input type="search" name="q" value="{{ q }}" placeholder="Vendedor o n.º de comprobante"></label></form>
+  {% if compras %}
+  <div class="ik-table-wrap"><table class="ik-table">
+    <thead><tr><th>Fecha</th><th>Vendedor</th><th>Comprobante</th><th>Materias primas</th><th class="num">Total</th><th class="acc"></th></tr></thead>
+    <tbody>{% for c in compras %}
+      <tr><td>{{ c.fecha|date:"d/m/Y" }}</td><td><b>{{ c.proveedor }}</b></td><td>{{ c.get_tipo_comprobante_display }} {{ c.numero_comprobante }}</td>
+        <td class="ik-small">{% for l in c.lotes.all %}{{ l.tipo.nombre }} ({{ l.cantidad|cant }} {{ l.tipo.unidad }}){% if not forloop.last %}, {% endif %}{% endfor %}</td>
+        <td class="num">{{ c.total|pesos:2 }}</td>
+        <td class="acc"><a class="ik-btn ik-btn-ghost ik-btn-sm" href="{% url 'panel:comprobante' c.pk %}" target="_blank"><span class="material-symbols-outlined">{% if c.es_pdf %}picture_as_pdf{% else %}image{% endif %}</span>Ver ticket</a>
+          <a class="ik-btn ik-btn-link" href="{% url 'panel:compra' c.pk %}">Detalle</a></td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="ad-panel-b"><div class="ik-vacio"><span class="material-symbols-outlined">receipt</span><h3>No hay compras cargadas</h3></div></div>{% endif %}
+</div>
+{% endblock %}

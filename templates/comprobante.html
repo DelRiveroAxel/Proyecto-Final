@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% load iurko %}
+{% block titulo %}Comprobante de pago · Pedido #{{ pedido.numero }}{% endblock %}
+{% block body_class %}ik-body ik-comprobante-page{% endblock %}
+{% block cuerpo %}
+<div class="ik-comprobante-acc no-print">
+  <a class="ik-btn ik-btn-ghost ik-btn-sm" href="{{ volver }}"><span class="material-symbols-outlined">arrow_back</span>Volver</a>
+  <button class="ik-btn ik-btn-primary ik-btn-sm" type="button" onclick="window.print()"><span class="material-symbols-outlined">print</span>Imprimir / guardar PDF</button>
+</div>
+<article class="ik-comprobante">
+  <header>
+    <div><b class="ik-comprobante-marca">Iurko Chacinados</b><span class="ik-caption">{{ marca.direccion }}{% if marca.telefono %} · {{ marca.telefono }}{% endif %}</span></div>
+    <div class="ik-right"><span class="ik-eyebrow">Comprobante de pago</span><div class="ik-comprobante-num">Pedido #{{ pedido.numero }}</div></div>
+  </header>
+
+  <div class="ik-comprobante-estado"><span class="material-symbols-outlined">check_circle</span>
+    <div><b>Pago acreditado</b><span>{{ pedido.pagado_en|date:"d/m/Y" }} a las {{ pedido.pagado_en|date:"H:i" }} hs</span></div>
+    <strong>{{ pedido.total|pesos:2 }}</strong></div>
+
+  <dl class="ik-comprobante-datos">
+    <div><dt>Cliente</dt><dd>{{ pedido.cliente.nombre_visible }}</dd></div>
+    <div><dt>Correo</dt><dd>{{ pedido.cliente.email|default:"—" }}</dd></div>
+    <div><dt>Medio de pago</dt><dd>{{ pedido.metodo_legible }}</dd></div>
+    <div><dt>N.º de operación (Mercado Pago)</dt><dd class="mono">{{ pedido.mp_payment_id|default:"—" }}</dd></div>
+    <div><dt>N.º de orden (Mercado Pago)</dt><dd class="mono">{{ pedido.mp_order_id|default:"—" }}</dd></div>
+    <div><dt>Referencia</dt><dd class="mono">{{ pedido.external_reference }}</dd></div>
+  </dl>
+
+  <table class="ik-table">
+    <thead><tr><th>Producto</th><th>Piezas (código)</th><th class="num">Peso</th><th class="num">$/kg</th><th class="num">Importe</th></tr></thead>
+    <tbody>{% for it in pedido.items.all %}
+      <tr><td><b>{{ it.nombre }}</b><div class="ik-caption">{{ it.cantidad }} pieza{{ it.cantidad|pluralize }}</div></td>
+        <td class="mono ik-small">{% for a in it.asignaciones.all %}{{ a.pieza.codigo }}{% if not forloop.last %}<br>{% endif %}{% empty %}—{% endfor %}</td>
+        <td class="num">{{ it.peso_g|kg }}</td><td class="num">{{ it.precio_kg|pesos }}</td><td class="num">{{ it.subtotal|pesos:2 }}</td></tr>
+    {% endfor %}</tbody>
+    <tfoot><tr><td colspan="4" class="num"><b>Total pagado</b></td><td class="num"><b>{{ pedido.total|pesos:2 }}</b></td></tr></tfoot>
+  </table>
+
+  <p class="ik-caption ik-mt">Comprobante emitido por Iurko Chacinados con los datos de la operación de Mercado Pago. No es factura.
+    {% if pedido.mp_metodo == 'demo' %}<b>Pago simulado en modo demo: no hubo cobro real.</b>{% endif %}</p>
+</article>
+{% endblock %}

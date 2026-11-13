@@ -1,0 +1,45 @@
+{% extends "panel/base_panel.html" %}
+{% load iurko %}
+{% block titulo_panel %}Trazabilidad{% endblock %}{% block titulo_top %}Trazabilidad{% endblock %}
+{% block contenido %}
+<div class="ad-head"><div><h1>Trazabilidad</h1><p>Seguí el camino de cada producto: de qué compra de materia prima salió y a qué clientes llegó. Sirve si un proveedor avisa de un problema o si un cliente consulta por una pieza.</p></div></div>
+
+<div class="ad-traza-modos">
+  <div class="ad-traza-modo">
+    <span class="material-symbols-outlined">qr_code_2</span>
+    <div><b>Tengo el código de una pieza o tanda</b><span>14 números (pieza) o 10 (tanda). Te muestra qué materias primas lleva y quién la compró.</span>
+      <form method="get" class="ik-flex" style="margin-top:.6rem"><input class="ik-input" name="q" inputmode="numeric" placeholder="Ej.: 05112026010021" value="{% if q and q|length >= 10 %}{{ q }}{% endif %}"><button class="ik-btn ik-btn-primary">Buscar</button></form></div>
+  </div>
+  <div class="ad-traza-modo">
+    <span class="material-symbols-outlined">local_shipping</span>
+    <div><b>Un proveedor avisó de un problema</b><span>Elegí abajo el lote de materia prima: te muestra en qué tandas se usó y a qué clientes llegó, con su contacto.</span></div>
+  </div>
+</div>
+
+<div class="ad-panel">
+  <form class="ad-panel-h" method="get">
+    <h3>Lotes de materia prima</h3>
+    <div class="ik-flex ik-wrap">
+      <select class="ik-select" name="tipo" onchange="this.form.submit()" style="width:auto">
+        <option value="">Todas las materias primas</option>
+        {% for t in tipos %}<option value="{{ t.pk }}" {% if tipo == t.pk|stringformat:"s" %}selected{% endif %}>{{ t.nombre }}</option>{% endfor %}
+      </select>
+      <label class="ik-search"><span class="material-symbols-outlined">search</span><input type="search" name="q" value="{% if q|length < 10 %}{{ q }}{% endif %}" placeholder="Proveedor, lote o comprobante…"></label>
+    </div>
+  </form>
+  {% if lotes %}
+  <div class="ik-table-wrap"><table class="ik-table">
+    <thead><tr><th>Materia prima</th><th>Proveedor</th><th>Compra</th><th>Lote del proveedor</th><th class="num">Comprado</th><th class="num">Usado en</th><th class="acc"></th></tr></thead>
+    <tbody>{% for l in lotes %}
+      <tr><td><b>{{ l.tipo.nombre }}</b></td><td>{{ l.compra.proveedor }}</td>
+        <td><a href="{% url 'panel:compra' l.compra_id %}">{{ l.compra.fecha|date:"d/m/Y" }}</a>{% if l.compra.numero_comprobante %} <span class="ik-caption">{{ l.compra.get_tipo_comprobante_display }} {{ l.compra.numero_comprobante }}</span>{% endif %}</td>
+        <td>{{ l.lote|default:"—" }}</td><td class="num">{{ l.cantidad|cant }} {{ l.tipo.unidad }}</td>
+        <td class="num">{% if l.n_tandas %}{{ l.n_tandas }} tanda{{ l.n_tandas|pluralize }}{% else %}<span class="ik-caption">sin usar</span>{% endif %}</td>
+        <td class="acc"><a class="ik-btn {% if l.n_tandas %}ik-btn-primary{% else %}ik-btn-ghost{% endif %} ik-btn-sm" href="{% url 'panel:traza_lote' l.pk %}">Ver camino</a></td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}
+  <div class="ad-panel-b"><div class="ik-vacio"><span class="material-symbols-outlined">inventory</span><h3>No hay lotes con ese filtro</h3></div></div>
+  {% endif %}
+</div>
+{% endblock %}

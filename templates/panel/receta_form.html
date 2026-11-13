@@ -1,0 +1,79 @@
+{% extends "panel/base_panel.html" %}
+{% load iurko %}
+{% block titulo_panel %}{% if receta.pk %}{{ receta.nombre }}{% else %}Nueva receta{% endif %}{% endblock %}
+{% block titulo_top %}{% if receta.pk %}Editar receta{% else %}Nueva receta{% endif %}{% endblock %}
+{% block contenido %}
+<div class="ad-head"><div><div class="ik-crumbs"><a href="{% url 'panel:recetas' %}">Recetas</a> / <b>{{ receta.nombre|default:"Nueva" }}</b></div>
+  <h1>{{ receta.nombre|default:"Nueva receta" }}</h1>{% if costo %}<p>Costo estimado de insumos: <b>{{ costo|pesos }}/kg</b> (con el último precio de compra de cada materia prima).</p>{% endif %}</div></div>
+<form method="post" enctype="multipart/form-data" class="ik-form" novalidate>
+  {% csrf_token %}
+  <div class="ad-cols">
+    <div class="ad-panel">
+      <div class="ad-panel-h"><h3>Producto en la tienda</h3></div>
+      <div class="ad-panel-b ad-cols">
+        {% for campo in form %}{% if campo.name != 'foto' and campo.name != 'fotos_extra' %}
+        <div class="ik-field {% if campo.errors %}has-error{% endif %} {% if campo.name == 'descripcion' or campo.name == 'nombre' %}full{% endif %}">
+          {% if campo.name == 'publicada' %}<label class="ik-check" style="margin-top:1.8rem">{{ campo }} {{ campo.label }}</label>
+          {% else %}<label for="{{ campo.id_for_label }}">{{ campo.label }}</label>{{ campo }}{% endif %}
+          {% if campo.errors %}<span class="ik-error">{{ campo.errors|join:" " }}</span>{% elif campo.help_text %}<span class="ik-hint">{{ campo.help_text }}</span>{% endif %}
+        </div>
+        {% endif %}{% endfor %}
+      </div>
+    </div>
+    <div>
+    <div class="ad-panel" id="fotos">
+      <div class="ad-panel-h"><h3>Fotos</h3><span class="ik-caption">Las usan todas las tandas de esta receta</span></div>
+      <div class="ad-panel-b">
+        <div class="ad-fotos">
+          {% if receta.foto %}
+          <figure class="ad-foto es-principal"><img src="{{ receta.foto.url }}" alt=""><figcaption>Principal</figcaption>
+            <button class="ad-foto-x" formaction="{% url 'panel:receta_foto_quitar_principal' receta.pk %}" formnovalidate title="Quitar foto" aria-label="Quitar foto principal"><span class="material-symbols-outlined">close</span></button></figure>
+          {% endif %}
+          {% if receta.pk %}{% for f in receta.fotos.all %}
+          <figure class="ad-foto"><img src="{{ f.imagen.url }}" alt="">
+            <button class="ad-foto-star" formaction="{% url 'panel:receta_foto_principal' f.pk %}" formnovalidate title="Usar como principal" aria-label="Usar como foto principal"><span class="material-symbols-outlined">star</span></button>
+            <button class="ad-foto-x" formaction="{% url 'panel:foto_borrar' 'receta' f.pk %}" formnovalidate title="Quitar foto" aria-label="Quitar foto"><span class="material-symbols-outlined">close</span></button></figure>
+          {% endfor %}{% endif %}
+        </div>
+        {% if not receta.foto and not receta.pk or not receta.foto and not receta.fotos.exists %}<p class="ik-muted ik-small">Todavía no hay fotos. La primera que subas queda como principal (la de la tarjeta del catálogo).</p>{% endif %}
+        <div class="ad-cols ik-mt">
+          <div class="ik-field {% if form.foto.errors %}has-error{% endif %}"><span class="ik-label">{% if receta.foto %}Cambiar la principal{% else %}Foto principal{% endif %}</span>
+            <label class="ik-file"><span class="material-symbols-outlined">add_photo_alternate</span><b>Elegir foto</b><span class="ik-caption">La de la tarjeta</span>{{ form.foto }}</label>
+            {% if form.foto.errors %}<span class="ik-error">{{ form.foto.errors|join:" " }}</span>{% endif %}</div>
+          <div class="ik-field {% if form.fotos_extra.errors %}has-error{% endif %}"><span class="ik-label">Agregar más fotos</span>
+            <label class="ik-file"><span class="material-symbols-outlined">collections</span><b>Elegir varias</b><span class="ik-caption">Podés seleccionar muchas a la vez</span>{{ form.fotos_extra }}</label>
+            {% if form.fotos_extra.errors %}<span class="ik-error">{{ form.fotos_extra.errors|join:" " }}</span>{% endif %}</div>
+        </div>
+        <p class="ik-caption" style="margin:0">Las fotos nuevas se suben al tocar “Guardar receta”. JPG, PNG o WEBP de hasta 5 MB.</p>
+      </div>
+    </div>
+    <div class="ad-panel">
+      <div class="ad-panel-h"><h3>Ingredientes</h3><span class="ik-caption">cantidades para los kg de “Los ingredientes son para”</span></div>
+      {{ formset.management_form }}
+      {% for e in formset.non_form_errors %}<div class="ik-msg error">{{ e }}</div>{% endfor %}
+      <div class="ik-table-wrap"><table class="ik-table" data-formset="{{ formset.prefix }}">
+        <thead><tr><th>Materia prima</th><th style="width:150px">Cantidad</th><th style="width:60px"></th></tr></thead>
+        <tbody data-filas>
+        {% for f in formset %}
+          <tr data-fila>
+            <td>{{ f.tipo }}{% for e in f.tipo.errors %}<span class="ik-error">{{ e }}</span>{% endfor %}{% for e in f.non_field_errors %}<span class="ik-error">{{ e }}</span>{% endfor %}</td>
+            <td><div class="ik-flex" style="gap:.4rem">{{ f.cantidad }}<span class="ik-caption" data-unidad>{% if f.instance.pk %}{{ f.instance.tipo.unidad }}{% endif %}</span></div>{% for e in f.cantidad.errors %}<span class="ik-error">{{ e }}</span>{% endfor %}</td>
+            <td class="acc"><span hidden>{{ f.DELETE }}</span>{{ f.id }}<button type="button" class="ik-btn ik-btn-icon ik-quitar" data-quitar aria-label="Quitar ingrediente" title="Quitar"><span class="material-symbols-outlined">delete</span></button></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+      <template data-molde><tr data-fila>
+        <td>{{ formset.empty_form.tipo }}</td>
+        <td><div class="ik-flex" style="gap:.4rem">{{ formset.empty_form.cantidad }}<span class="ik-caption" data-unidad></span></div></td>
+        <td class="acc"><span hidden>{{ formset.empty_form.DELETE }}</span>{{ formset.empty_form.id }}<button type="button" class="ik-btn ik-btn-icon ik-quitar" data-quitar aria-label="Quitar ingrediente" title="Quitar"><span class="material-symbols-outlined">delete</span></button></td>
+      </tr></template>
+      {{ unidades_tipos|json_script:"unidades-json" }}
+      <div class="ad-panel-f" style="justify-content:space-between"><span class="ik-caption">Al elegir una materia prima en el último renglón aparece otro. ¿Falta alguna? <a href="{% url 'panel:insumos' %}">Agregala acá</a>.</span>
+        <button type="button" class="ik-btn ik-btn-ghost ik-btn-sm" data-agregar><span class="material-symbols-outlined">add</span>Agregar ingrediente</button></div>
+    </div>
+    </div>
+  </div>
+  <div class="ik-flex" style="justify-content:flex-end"><a class="ik-btn ik-btn-ghost" href="{% url 'panel:recetas' %}">Cancelar</a><button class="ik-btn ik-btn-primary"><span class="material-symbols-outlined">save</span>Guardar receta</button></div>
+</form>
+{% endblock %}

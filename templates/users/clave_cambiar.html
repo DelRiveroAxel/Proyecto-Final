@@ -1,0 +1,17 @@
+{% extends "users/base_auth.html" %}
+{% block titulo %}Cambiar contraseña · Iurko Chacinados{% endblock %}
+{% block tarjeta %}
+<div class="ik-auth-brand"><h2>Cambiar contraseña</h2><p>Por seguridad, primero escribí la actual.</p></div>
+<form method="post" class="ik-form" novalidate>
+  {% csrf_token %}
+  {% for campo in form %}
+  <div class="ik-field {% if campo.errors %}has-error{% endif %}">
+    <div class="ik-field-head"><label for="{{ campo.id_for_label }}">{{ campo.label }}</label>{% if forloop.first %}<a class="ik-small" href="{% url 'clave_olvidada' %}">No me acuerdo</a>{% endif %}</div>
+    <div class="ik-input-icon"><span class="material-symbols-outlined">lock</span>{{ campo }}</div>
+    {% if campo.errors %}<span class="ik-error">{{ campo.errors|join:" " }}</span>{% endif %}
+  </div>
+  {% endfor %}
+  <button class="ik-btn ik-btn-primary ik-btn-block ik-btn-lg">Guardar contraseña nueva</button>
+</form>
+<p class="ik-auth-alt ik-mt"><a href="{% if user.is_staff %}{% url 'panel:inicio' %}{% else %}{% url 'tienda:mis_pedidos' %}{% endif %}">Cancelar</a></p>
+{% endblock %}

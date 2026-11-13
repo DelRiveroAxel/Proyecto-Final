@@ -1,0 +1,36 @@
+{% extends "users/base_auth.html" %}
+{% block titulo %}Iniciar sesión · Iurko Chacinados{% endblock %}
+{% block tarjeta %}
+<div class="ik-auth-brand">
+  <div class="ik-auth-sello"><span class="ik-avatar"><span class="material-symbols-outlined" style="font-size:2.6rem;color:var(--wine)">restaurant</span></span><span class="ik-chip">Origen garantizado</span></div>
+  <h1>Iurko Chacinados</h1>
+  <h2>Iniciar sesión</h2>
+  <p>Ingresá para hacer tus pedidos y ver su estado</p>
+</div>
+
+{% if messages %}<div class="ik-msgs">{% for m in messages %}<div class="ik-msg {{ m.tags }}">{{ m }}</div>{% endfor %}</div>{% endif %}
+{% if form.non_field_errors %}<div class="ik-msgs">{% for e in form.non_field_errors %}<div class="ik-msg error">{{ e }}</div>{% endfor %}</div>{% endif %}
+
+<form method="post" class="ik-form" novalidate>
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ next }}">
+  <div class="ik-field">
+    <label for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+    <div class="ik-input-icon"><span class="material-symbols-outlined">person</span>{{ form.username }}</div>
+  </div>
+  <div class="ik-field">
+    <div class="ik-field-head"><label for="password">{{ form.password.label }}</label><a class="ik-small" href="{% url 'clave_olvidada' %}">¿Olvidaste tu contraseña?</a></div>
+    <div class="ik-input-icon"><span class="material-symbols-outlined">lock</span>{{ form.password }}
+      <button type="button" class="ik-eye" data-ver-clave="password" aria-label="Mostrar contraseña"><span class="material-symbols-outlined">visibility</span></button></div>
+  </div>
+  <div class="ik-auth-row">
+    <label class="ik-check">{{ form.remember }} {{ form.remember.label }}</label>
+    <span class="ik-dot">Conexión segura</span>
+  </div>
+  <button class="ik-btn ik-btn-primary ik-btn-block ik-btn-lg">Ingresar <span class="material-symbols-outlined">arrow_forward</span></button>
+</form>
+
+<div class="ik-auth-sep">Tradición familiar</div>
+<p class="ik-auth-alt">¿Todavía no tenés cuenta? <a href="{% url 'registro' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Registrate</a></p>
+{% endblock %}
+{% block pie_tarjeta %}<div class="ik-auth-pie"><span><span class="material-symbols-outlined" style="color:var(--leather)">workspace_premium</span> Maestría en charcutería y ahumados</span><span>Misiones, Argentina</span></div>{% endblock %}

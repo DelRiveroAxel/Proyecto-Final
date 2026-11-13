@@ -1,0 +1,14 @@
+{% load iurko %}
+{% if filas %}
+<ul class="ad-receta">
+  {% for ing, necesario, disponible, ok, falta in filas %}
+  <li><span>{{ ing.tipo.nombre }}</span><span class="cant {% if not ok %}falta{% endif %}">{{ necesario|cant }} {{ ing.tipo.unidad }}</span>
+    <span class="ik-caption">{% if ok %}hay {{ disponible|cant }}{% else %}<b style="color:var(--err-fg)">faltan {{ falta|cant }} · hay {{ disponible|cant }}</b>{% endif %}</span></li>
+  {% endfor %}
+</ul>
+<p class="ik-caption ik-mt">Para {{ kg|cant }} kg de {{ receta.nombre }} (la receta está escrita para {{ receta.rendimiento_base_kg|cant }} kg).</p>
+{% elif receta %}
+<p class="ik-muted">La receta <b>{{ receta.nombre }}</b> no tiene ingredientes cargados. <a href="{% url 'panel:receta' receta.pk %}">Cargalos</a> o destildá “Descontar materias primas”.</p>
+{% else %}
+<p class="ik-muted">Elegí la receta y los kg para ver los ingredientes.</p>
+{% endif %}

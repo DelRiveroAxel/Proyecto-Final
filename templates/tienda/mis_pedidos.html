@@ -1,0 +1,40 @@
+{% extends "tienda/base_tienda.html" %}
+{% load iurko %}
+{% block titulo %}Mis pedidos · Iurko Chacinados{% endblock %}
+{% block contenido %}
+<div class="ik-pagehead"><div><div class="ik-crumbs">Mi cuenta / <b>Pedidos y avisos</b></div><h1>Mis pedidos</h1></div></div>
+
+{% if pedidos %}
+<div class="ik-pedidos">
+  {% for p in pedidos %}
+  <div class="ik-pedido">
+    <div class="ik-pedido-h"><div><b>Pedido #{{ p.numero }}</b> <span class="ik-caption">· {{ p.creado|date:"d/m/Y H:i" }}{% if p.entregado_en %} · entregado el {{ p.entregado_en|date:"d/m/Y H:i" }}{% endif %}</span></div><span class="ik-est {{ p.clase_estado }}">{{ p.get_estado_display }}</span></div>
+    {% if p.pasos_timeline %}<ol class="ik-timeline">{% for nombre, hecho, actual in p.pasos_timeline %}<li class="{% if hecho %}done{% endif %} {% if actual %}now{% endif %}">{{ nombre }}</li>{% endfor %}</ol>{% endif %}
+    <ul class="ik-pedido-items ik-mt">{% for it in p.items.all %}<li><span>{{ it.cantidad }} × {{ it.nombre }}</span><span>{{ it.subtotal|pesos }}</span></li>{% endfor %}</ul>
+    <div class="ik-pedido-f"><b class="ik-price" style="font-size:1.2rem">{{ p.total|pesos }}</b>
+      {% if p.esperando_pago %}<a class="ik-btn ik-btn-mp ik-btn-sm" href="{% url 'tienda:pago' p.pk %}">Pagar ahora</a>
+      {% else %}<a class="ik-btn ik-btn-ghost ik-btn-sm" href="{% url 'tienda:pedido' p.pk %}">Ver detalle</a>{% endif %}</div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="ik-vacio"><span class="material-symbols-outlined">receipt_long</span><h3>Todavía no hiciste pedidos</h3><a class="ik-btn ik-btn-primary" href="{% url 'tienda:catalogo' %}">Ver productos</a></div>
+{% endif %}
+
+<div class="ik-sec">Avisos de stock</div>
+{% if avisos %}
+<div class="ik-cart-list">
+  {% for a in avisos %}
+  <div class="ik-cart-item" style="grid-template-columns:minmax(0,1fr) auto auto">
+    <div><h4>{{ a.receta.nombre }}</h4><span class="ik-caption">Pedido el {{ a.creado|date:"d/m/Y" }}</span></div>
+    {% if a.avisado_en %}<span class="ik-est ik-est-ok">Volvió a haber · {{ a.avisado_en|date:"d/m" }}</span>
+      <a class="ik-btn ik-btn-primary ik-btn-sm" href="{% url 'tienda:producto' a.receta.slug %}">Comprar</a>
+    {% else %}<span class="ik-est ik-est-wait">Esperando la próxima tanda</span>
+      <form method="post" action="{% url 'tienda:avisame_quitar' a.receta.pk %}">{% csrf_token %}<button class="ik-btn ik-btn-link">Quitar</button></form>{% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p class="ik-muted">Cuando un producto no tenga stock, tocá <b>“Avisame cuando haya”</b> y te escribimos apenas salga la próxima tanda.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "tienda/base_tienda.html" %}
+{% load iurko %}
+{% block titulo %}Pedido #{{ pedido.numero }} · Iurko Chacinados{% endblock %}
+{% block contenido %}
+<div class="ik-crumbs"><a href="{% url 'tienda:mis_pedidos' %}">Mis pedidos</a> / <b>#{{ pedido.numero }}</b></div>
+<div class="ik-pedido ik-mt">
+  <div class="ik-pedido-h"><div><h2 style="margin:0">Pedido #{{ pedido.numero }}</h2><span class="ik-caption">{{ pedido.creado|date:"d/m/Y H:i" }}{% if pedido.pagado_en %} · pagado el {{ pedido.pagado_en|date:"d/m/Y H:i" }}{% endif %}{% if pedido.entregado_en %} · entregado el {{ pedido.entregado_en|date:"d/m/Y H:i" }}{% endif %}</span>
+    {% if pedido.pagado_en %}<div class="ik-mt" style="margin-top:.5rem"><a class="ik-btn ik-btn-ghost ik-btn-sm" href="{% url 'tienda:pedido_comprobante' pedido.pk %}" target="_blank"><span class="material-symbols-outlined">receipt_long</span>Comprobante de pago</a></div>{% endif %}</div>
+    <span class="ik-est {{ pedido.clase_estado }}">{{ pedido.get_estado_display }}</span></div>
+  {% if pedido.pasos_timeline %}<ol class="ik-timeline">{% for nombre, hecho, actual in pedido.pasos_timeline %}<li class="{% if hecho %}done{% endif %} {% if actual %}now{% endif %}">{{ nombre }}</li>{% endfor %}</ol>{% endif %}
+  {% if pedido.motivo_cancelacion %}<div class="ik-msg warning ik-mt">{{ pedido.motivo_cancelacion }}</div>{% endif %}
+
+  <div class="ik-table-wrap ik-mt"><table class="ik-table">
+    <thead><tr><th>Producto</th><th class="num">Piezas</th><th class="num">Peso</th><th class="num">$/kg</th><th class="num">Subtotal</th></tr></thead>
+    <tbody>
+    {% for it in pedido.items.all %}
+      <tr><td><b>{{ it.nombre }}</b>
+        {% if it.asignaciones.all %}<div class="ik-flex ik-wrap" style="gap:.35rem;margin-top:.35rem">{% for a in it.asignaciones.all %}<span title="{{ a.pieza.peso_g }} g">{{ a.pieza.codigo|codigo }}</span>{% endfor %}</div>
+          {% with v=it.vencimientos %}{% if v %}<div class="ik-caption" style="margin-top:.3rem">Consumir antes del {% for f in v %}{{ f|date:"d/m/Y" }}{% if not forloop.last %} / {% endif %}{% endfor %}</div>{% endif %}{% endwith %}{% endif %}</td>
+        <td class="num">{{ it.cantidad }}</td><td class="num">{{ it.peso_g|kg }}</td><td class="num">{{ it.precio_kg|pesos }}</td><td class="num"><b>{{ it.subtotal|pesos }}</b></td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  <div class="ik-pedido-f"><span class="ik-muted">{% if pedido.notas %}Nota: {{ pedido.notas }}{% endif %}</span><b class="ik-price">{{ pedido.total|pesos }}</b></div>
+</div>
+{% endblock %}

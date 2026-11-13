@@ -1,0 +1,11 @@
+{% autoescape off %}Hola{% if user.first_name %} {{ user.first_name }}{% endif %}:
+
+Recibimos un pedido para cambiar la contraseña de tu cuenta de Iurko Chacinados ({{ user.username }}).
+Para elegir una nueva, abrí este enlace (vale por 3 horas):
+
+{{ protocol }}://{{ domain }}{% url 'clave_nueva' uidb64=uid token=token %}
+
+Si no fuiste vos, ignorá este correo: tu contraseña no cambia.
+
+Iurko Chacinados
+{% endautoescape %}

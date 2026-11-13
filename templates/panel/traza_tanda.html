@@ -1,0 +1,53 @@
+{% extends "panel/base_panel.html" %}
+{% load iurko %}
+{% block titulo_panel %}Trazabilidad · {{ tanda.codigo }}{% endblock %}{% block titulo_top %}Trazabilidad{% endblock %}
+{% block contenido %}
+{% with est=tanda.etiqueta_estado %}
+<div class="ad-head">
+  <div><div class="ik-crumbs"><a href="{% url 'panel:traza' %}">Trazabilidad</a> / <b>{% if pieza %}Pieza {{ pieza.codigo }}{% else %}Tanda {{ tanda.codigo }}{% endif %}</b></div>
+    <h1>{{ tanda.receta.nombre }}</h1>
+    <p>Tanda {{ tanda.codigo|codigo }} · producida el {{ tanda.fecha_produccion|date:"d/m/Y" }}{% if tanda.fecha_vencimiento %} · consumir antes del {{ tanda.fecha_vencimiento|date:"d/m/Y" }}{% endif %} · <span class="ik-est {{ est.1 }}">{{ est.0 }}</span></p></div>
+  <div class="ad-head-acc no-print">
+    <a class="ik-btn ik-btn-ghost" href="{% url 'panel:tanda' tanda.pk %}"><span class="material-symbols-outlined">inventory_2</span>Ver la tanda</a>
+    <a class="ik-btn ik-btn-primary" href="?pdf=1{% if pieza %}&pieza={{ pieza.codigo }}{% endif %}"><span class="material-symbols-outlined">picture_as_pdf</span>Descargar PDF</a>
+  </div>
+</div>
+{% endwith %}
+
+{% if pieza %}
+<div class="ad-traza-pieza">
+  <span class="material-symbols-outlined">label</span>
+  <div><b>Pieza {{ pieza.codigo|codigo }}</b> · {{ pieza.peso_g|peso }} · {{ pieza.get_estado_display }}
+    {% if pieza.venta %}<span class="linea">Pedido <a href="{% url 'panel:pedido' pieza.venta.item.pedido.pk %}">#{{ pieza.venta.item.pedido.numero }}</a> de <b>{{ pieza.venta.item.pedido.cliente.nombre_visible }}</b> ({{ pieza.venta.item.pedido.get_estado_display|lower }}).</span>
+    {% elif pieza.vendida_fuera %}<span class="linea">{{ pieza.motivo_baja }}, el {{ pieza.venta_externa_fecha|date:"d/m/Y" }}{% if pieza.venta_externa_monto is not None %} ({{ pieza.venta_externa_monto|pesos }}){% endif %}.</span>
+    {% elif pieza.estado == 'BAJA' %}<span class="linea">Dada de baja{% if pieza.motivo_baja %}: {{ pieza.motivo_baja }}{% endif %}.</span>
+    {% else %}<span class="linea">Todavía no se vendió.</span>{% endif %}</div>
+</div>
+{% endif %}
+
+<ol class="ad-traza-camino">
+  <li><span class="material-symbols-outlined">local_shipping</span><b>{{ consumos|length }} lote{{ consumos|length|pluralize }}</b><span>de materia prima</span></li>
+  <li><span class="material-symbols-outlined">factory</span><b>{{ resumen.total }} piezas</b><span>{{ tanda.kg_producidos|cant }} kg producidos</span></li>
+  <li><span class="material-symbols-outlined">group</span><b>{{ personas|length }} cliente{{ personas|length|pluralize }}</b><span>{{ resumen.vendidas }} vendidas{% if resumen.fuera %} ({{ resumen.fuera }} por fuera de la web){% endif %} · {{ resumen.libres }} libres{% if resumen.baja %} · {{ resumen.baja }} de baja{% endif %}</span></li>
+</ol>
+
+<div class="ad-panel">
+  <div class="ad-panel-h"><h3>De dónde salió (materias primas)</h3></div>
+  {% if consumos %}
+  <div class="ik-table-wrap"><table class="ik-table">
+    <thead><tr><th>Materia prima</th><th>Proveedor</th><th>Compra</th><th>Lote del proveedor</th><th class="num">Usado</th><th class="acc no-print"></th></tr></thead>
+    <tbody>{% for c in consumos %}
+      <tr><td><b>{{ c.lote.tipo.nombre }}</b></td><td>{{ c.lote.compra.proveedor }}</td>
+        <td><a href="{% url 'panel:compra' c.lote.compra_id %}">{{ c.lote.compra.fecha|date:"d/m/Y" }}</a>{% if c.lote.compra.numero_comprobante %} <span class="ik-caption">{{ c.lote.compra.get_tipo_comprobante_display }} {{ c.lote.compra.numero_comprobante }}</span>{% endif %}</td>
+        <td>{{ c.lote.lote|default:"—" }}{% if c.lote.vencimiento %} <span class="ik-caption">vence {{ c.lote.vencimiento|date:"d/m/Y" }}</span>{% endif %}</td>
+        <td class="num">{{ c.cantidad|cant }} {{ c.lote.tipo.unidad }}</td>
+        <td class="acc no-print"><a class="ik-btn ik-btn-ghost ik-btn-sm" href="{% url 'panel:traza_lote' c.lote_id %}" title="Otras tandas que usaron este lote">Otras tandas</a></td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}
+  <div class="ad-panel-b"><p class="ik-muted" style="margin:0">{% if tanda.desconto_insumos %}No hay materias primas registradas.{% else %}Al cargar esta tanda no se descontaron materias primas, así que no hay de dónde rastrearla.{% endif %}</p></div>
+  {% endif %}
+</div>
+
+{% include "panel/_traza_clientes.html" with resaltar=pieza.codigo %}
+{% endblock %}

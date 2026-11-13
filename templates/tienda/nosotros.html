@@ -1,0 +1,42 @@
+{% extends "tienda/base_tienda.html" %}
+{% block titulo %}{{ pagina.titulo }} · Iurko Chacinados{% endblock %}
+{% block contenido %}
+<div class="ik-pagehead"><div><div class="ik-crumbs">Iurko Chacinados / <b>Nosotros</b></div><h1>{{ pagina.titulo }}</h1>
+  {% if pagina.bajada %}<p class="ik-lead">{{ pagina.bajada }}</p>{% endif %}</div>
+  <div class="ik-lote-actual"><div><small>Desde</small><b>{{ pagina.anio_fundacion|stringformat:"d" }}</b></div><span class="material-symbols-outlined" style="color:var(--leather)">workspace_premium</span></div></div>
+
+<section class="ik-nosotros">
+  <div class="ik-nosotros-foto">{% if pagina.foto %}<img src="{{ pagina.foto.url }}" alt="{{ pagina.titulo }}">{% else %}<span class="ik-ph">I</span>{% endif %}</div>
+  <div class="ik-nosotros-texto">
+    <span class="ik-eyebrow">Nuestra historia</span>
+    {{ pagina.historia|linebreaks }}
+  </div>
+</section>
+
+<section class="ik-promesa">
+  <div>
+    <span class="ik-eyebrow">Lo que nos mueve</span>
+    <h2>Hecho como antes</h2>
+    <p class="ik-muted">{{ pagina.mision|linebreaksbr }}</p>
+    {% if pagina.lista_valores %}<ul>{% for v in pagina.lista_valores %}<li><span class="material-symbols-outlined">check_circle</span>{{ v }}</li>{% endfor %}</ul>{% endif %}
+  </div>
+  <div class="ik-promesa-card"><span class="material-symbols-outlined" style="font-size:2rem;color:var(--salumi)">workspace_premium</span><h3>Desde {{ pagina.anio_fundacion|stringformat:"d" }}</h3><p class="ik-small">Cada pieza tiene su código de origen: sabés de qué tanda viene.</p></div>
+</section>
+
+{% if pagina.lista_equipo %}
+<div class="ik-sec">Quiénes somos</div>
+<div class="ik-equipo">{% for nombre, rol in pagina.lista_equipo %}
+  <div class="ik-equipo-p"><span class="ik-avatar">{{ nombre|slice:":1"|upper }}</span><div><b>{{ nombre }}</b>{% if rol %}<span>{{ rol }}</span>{% endif %}</div></div>
+{% endfor %}</div>
+{% endif %}
+
+<div class="ik-sec">Dónde encontrarnos</div>
+<div class="ik-contacto">
+  {% if pagina.direccion %}<div><span class="material-symbols-outlined">location_on</span><div><small>Dirección</small>{{ pagina.direccion }}</div></div>{% endif %}
+  {% if pagina.horario %}<div><span class="material-symbols-outlined">schedule</span><div><small>Horario</small>{{ pagina.horario }}</div></div>{% endif %}
+  {% if pagina.telefono %}<div><span class="material-symbols-outlined">call</span><div><small>Teléfono / WhatsApp</small>{% if pagina.whatsapp_link %}<a href="{{ pagina.whatsapp_link }}" target="_blank" rel="noopener">{{ pagina.telefono }}</a>{% else %}{{ pagina.telefono }}{% endif %}</div></div>{% endif %}
+  {% if pagina.email %}<div><span class="material-symbols-outlined">mail</span><div><small>Correo</small><a href="mailto:{{ pagina.email }}">{{ pagina.email }}</a></div></div>{% endif %}
+  {% if pagina.instagram %}<div><span class="material-symbols-outlined">photo_camera</span><div><small>Instagram</small><a href="https://instagram.com/{{ pagina.instagram }}" target="_blank" rel="noopener">@{{ pagina.instagram }}</a></div></div>{% endif %}
+  {% if pagina.facebook %}<div><span class="material-symbols-outlined">thumb_up</span><div><small>Facebook</small><a href="https://facebook.com/{{ pagina.facebook }}" target="_blank" rel="noopener">{{ pagina.facebook }}</a></div></div>{% endif %}
+</div>
+{% endblock %}

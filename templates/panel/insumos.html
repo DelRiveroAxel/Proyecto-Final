@@ -1,0 +1,65 @@
+{% extends "panel/base_panel.html" %}
+{% load iurko %}
+{% block titulo_panel %}Stock de insumos{% endblock %}{% block titulo_top %}Stock de materias primas{% endblock %}
+{% block contenido %}
+<div class="ad-head"><div><h1>Stock de materias primas</h1><p>Suma de lo que queda de cada compra. Se descuenta solo al cargar tandas.</p></div>
+  <div class="ad-head-acc"><a class="ik-btn ik-btn-primary" href="{% url 'panel:compra_nueva' %}"><span class="material-symbols-outlined">add</span>Cargar compra</a></div></div>
+
+{% if alertas.insumos_bajo %}
+<div class="ad-aviso">
+  <div class="ad-aviso-h"><span class="material-symbols-outlined">priority_high</span>
+    <div><b>Por qué aparece el aviso en Stock de insumos</b><span>{{ alertas.insumos_bajo|length }} materia{{ alertas.insumos_bajo|length|pluralize }} prima{{ alertas.insumos_bajo|length|pluralize }} por debajo del mínimo</span></div></div>
+  <ul>
+    {% for t in alertas.insumos_bajo %}
+    <li><span class="ik-est ik-est-{% if t.stock %}warn{% else %}err{% endif %}">{% if t.stock %}Reponer{% else %}Sin stock{% endif %}</span>
+      <div class="ad-aviso-txt"><b>{{ t.nombre }}</b> — quedan {{ t.stock|cant }} {{ t.unidad }} y el aviso es con menos de {{ t.stock_minimo|cant }} {{ t.unidad }}.</div>
+      <div class="ad-aviso-acc"><a class="ik-btn ik-btn-primary ik-btn-sm" href="{% url 'panel:compra_nueva' %}">Cargar compra</a></div></li>
+    {% endfor %}
+  </ul>
+  <p class="ik-caption" style="margin:0">El mínimo de cada materia prima se cambia en la columna “Aviso cuando baje de”. Si lo ponés en 0, no avisa.</p>
+</div>
+{% endif %}
+
+<div class="ad-panel">
+  {% if tipos %}
+  <div class="ik-table-wrap"><table class="ik-table">
+    <thead><tr><th>Materia prima</th><th class="num">En stock</th><th>Se mide en</th><th>Aviso cuando baje de</th><th class="num">Compras</th><th>Estado</th></tr></thead>
+    <tbody>
+    {% for t in tipos %}
+      <tr><td><b>{{ t.nombre }}</b></td><td class="num">{{ t.stock|cant }} {{ t.unidad }}</td>
+        <td><form method="post" action="{% url 'panel:insumo_unidad' t.pk %}">{% csrf_token %}
+          <select class="ik-select" name="unidad" onchange="this.form.submit()" style="height:34px;width:auto;font-size:.85rem" aria-label="Unidad de {{ t.nombre }}">
+            {% for u in unidades %}<option value="{{ u.pk }}" {% if u.pk == t.unidad_id %}selected{% endif %}>{{ u.nombre }} ({{ u.abreviatura }})</option>{% endfor %}
+          </select></form></td>
+        <td><form method="post" action="{% url 'panel:insumo_minimo' t.pk %}" class="ik-flex">{% csrf_token %}
+          <input class="ik-input" name="stock_minimo" value="{{ t.stock_minimo.normalize|stringformat:'f' }}" style="height:34px;width:110px" aria-label="Stock mínimo de {{ t.nombre }}">
+          <span class="ik-caption">{{ t.unidad }}</span><button class="ik-btn ik-btn-ghost ik-btn-sm">Guardar</button></form></td>
+        <td class="num">{{ t.compras }}</td>
+        <td>{% if t.bajo_minimo %}<span class="ik-est ik-est-err">Reponer</span>{% elif t.stock %}<span class="ik-est ik-est-ok">OK</span>{% else %}<span class="ik-est ik-est-err">Sin stock</span>{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  <div class="ad-panel-f" style="justify-content:flex-start"><span class="ik-caption">Si cambiás kg ↔ g (o l ↔ ml) se convierten solas las compras, recetas y el mínimo: 0,03 kg pasa a 30 g y $21.000/kg a $21/g.</span></div>
+  {% else %}<div class="ad-panel-b ik-muted">Todavía no hay materias primas cargadas.</div>{% endif %}
+</div>
+
+<div class="ad-cols">
+  <div class="ad-panel">
+    <div class="ad-panel-h"><h3>Agregar materia prima</h3></div>
+    <form method="post" class="ad-panel-b ik-form">{% csrf_token %}
+      {% for campo in form %}<div class="ik-field {% if campo.errors %}has-error{% endif %}"><label for="{{ campo.id_for_label }}">{{ campo.label }}</label>{{ campo }}{% if campo.errors %}<span class="ik-error">{{ campo.errors|join:" " }}</span>{% elif campo.help_text %}<span class="ik-hint">{{ campo.help_text }}</span>{% endif %}</div>{% endfor %}
+      <button class="ik-btn ik-btn-primary">Agregar</button>
+    </form>
+  </div>
+  <div class="ad-panel">
+    <div class="ad-panel-h"><h3>Unidades de medida</h3></div>
+    <div class="ad-panel-b">
+      <div class="ik-flex ik-wrap" style="gap:.4rem;margin-bottom:1rem">{% for u in unidades %}<span class="ik-chip" style="text-transform:none;letter-spacing:.02em">{{ u.nombre }} · {{ u.abreviatura }}</span>{% endfor %}</div>
+      <form method="post" class="ik-form">{% csrf_token %}
+        <div class="ad-cols">{% for campo in form_unidad %}<div class="ik-field {% if campo.errors %}has-error{% endif %}"><label for="{{ campo.id_for_label }}">{{ campo.label }}</label>{{ campo }}{% if campo.errors %}<span class="ik-error">{{ campo.errors|join:" " }}</span>{% endif %}</div>{% endfor %}</div>
+        <button class="ik-btn ik-btn-ghost">Agregar unidad</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

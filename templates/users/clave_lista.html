@@ -1,0 +1,8 @@
+{% extends "users/base_auth.html" %}
+{% block titulo %}Contraseña cambiada · Iurko Chacinados{% endblock %}
+{% block tarjeta %}
+<div class="ik-auth-brand">
+  <div class="ik-auth-sello"><span class="ik-avatar"><span class="material-symbols-outlined" style="font-size:2.4rem;color:var(--ok-fg)">check_circle</span></span></div>
+  <h2>¡Listo!</h2><p>Tu contraseña se cambió. Ya podés ingresar con la nueva.</p></div>
+<a class="ik-btn ik-btn-primary ik-btn-block ik-btn-lg" href="{% url 'login' %}">Iniciar sesión</a>
+{% endblock %}

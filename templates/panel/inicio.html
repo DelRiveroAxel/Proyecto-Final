@@ -1,0 +1,49 @@
+{% extends "panel/base_panel.html" %}
+{% load iurko %}
+{% block titulo_panel %}Inicio{% endblock %}{% block titulo_top %}Inicio{% endblock %}
+{% block contenido %}
+<div class="ad-head"><div><h1>Buen día, {{ user.first_name|default:user.username }}</h1><p>Así está la bodega hoy, {% now "l j \d\e F" %}.</p></div>
+  <div class="ad-head-acc"><a class="ik-btn ik-btn-ghost" href="{% url 'panel:compra_nueva' %}"><span class="material-symbols-outlined">receipt</span>Cargar compra</a>
+  <a class="ik-btn ik-btn-primary" href="{% url 'panel:tanda_nueva' %}"><span class="material-symbols-outlined">add</span>Cargar tanda</a></div></div>
+
+{% include "panel/_alertas_vencimiento.html" %}
+<div class="ad-kpis">
+  <div class="ad-kpi"><small><span class="material-symbols-outlined">inventory_2</span>Piezas a la venta</small><b>{{ kpis.piezas|num }}</b><span>en {{ kpis.tandas_venta }} tanda{{ kpis.tandas_venta|pluralize }}</span></div>
+  <div class="ad-kpi"><small><span class="material-symbols-outlined">scale</span>Kilos a la venta</small><b>{{ kpis.kg|num:1 }}</b><span>{{ kpis.estacionando }} piezas estacionando</span></div>
+  <div class="ad-kpi"><small><span class="material-symbols-outlined">qr_code_2</span>Reservadas ahora</small><b>{{ kpis.reservadas }}</b><span>pagos con QR en curso</span></div>
+  <div class="ad-kpi {% if kpis.pausadas %}ad-kpi-alert{% endif %}"><small><span class="material-symbols-outlined">pause_circle</span>Tandas pausadas</small><b>{{ kpis.pausadas }}</b><span><a href="{% url 'panel:tandas' %}?estado=PAUSADA">ver tandas</a></span></div>
+  <div class="ad-kpi"><small><span class="material-symbols-outlined">payments</span>Ventas del mes</small><b>{{ kpis.ventas_mes|pesos }}</b><span>{{ kpis.a_preparar }} pedido{{ kpis.a_preparar|pluralize }} por preparar</span></div>
+</div>
+
+{% if reintegros %}<div class="ik-msgs"><div class="ik-msg error">Hay {{ reintegros|length }} pedido{{ reintegros|pluralize }} cobrado{{ reintegros|pluralize }} con reintegro pendiente. <a href="{% url 'panel:pedidos' %}?estado=reintegros">Ver</a></div></div>{% endif %}
+
+<div class="ad-cols">
+  <div class="ad-panel">
+    <div class="ad-panel-h"><h3>Pedidos para preparar</h3><a class="ik-btn ik-btn-link" href="{% url 'panel:pedidos' %}">Ver todos</a></div>
+    {% if pedidos %}<div class="ik-table-wrap"><table class="ik-table"><tbody>
+      {% for p in pedidos %}<tr><td><a href="{% url 'panel:pedido' p.pk %}"><b>#{{ p.numero }}</b></a> · {{ p.cliente.nombre_visible }}<div class="ik-caption">pagado {{ p.pagado_en|timesince }} atrás</div></td>
+        <td><span class="ik-est {{ p.clase_estado }}">{{ p.get_estado_display }}</span></td><td class="num">{{ p.total|pesos }}</td></tr>{% endfor %}
+    </tbody></table></div>
+    {% else %}<div class="ad-panel-b ik-muted">No hay pedidos pendientes.</div>{% endif %}
+  </div>
+
+  <div>
+    {% if alertas.recetas_bajo %}
+    <div class="ad-panel">
+      <div class="ad-panel-h"><h3>Productos con poco stock</h3><a class="ik-btn ik-btn-link" href="{% url 'panel:tanda_nueva' %}">Cargar tanda</a></div>
+      <ul class="ad-receta" style="border:0;border-radius:0">{% for r in alertas.recetas_bajo %}<li><span>{{ r.nombre }}<span class="ik-caption" style="display:block">{{ r.motivo }}{% if r.detalle %} {{ r.detalle }}.{% endif %}</span></span><span class="cant {% if not r.stock %}falta{% endif %}">{{ r.stock }} pieza{{ r.stock|pluralize }}</span><a class="ik-btn ik-btn-ghost ik-btn-sm" href="{% url 'panel:tanda_nueva' %}?receta={{ r.pk }}">Cargar tanda</a></li>{% endfor %}</ul>
+    </div>
+    {% endif %}
+    <div class="ad-panel">
+      <div class="ad-panel-h"><h3>Insumos por debajo del mínimo</h3><a class="ik-btn ik-btn-link" href="{% url 'panel:insumos' %}">Stock</a></div>
+      {% if insumos %}<ul class="ad-receta" style="border:0;border-radius:0">{% for t in insumos %}<li><span>{{ t.nombre }}</span><span class="cant falta">{{ t.stock|cant }} {{ t.unidad }}</span><span class="ik-caption">mín. {{ t.stock_minimo|cant }}</span></li>{% endfor %}</ul>
+      {% else %}<div class="ad-panel-b ik-muted">Todo en orden.</div>{% endif %}
+    </div>
+    <div class="ad-panel">
+      <div class="ad-panel-h"><h3>Clientes esperando stock</h3></div>
+      {% if esperando %}<ul class="ad-receta" style="border:0;border-radius:0">{% for e in esperando %}<li><span>{{ e.receta__nombre }}</span><span class="cant">{{ e.n }}</span><span class="ik-caption">pidieron aviso</span></li>{% endfor %}</ul>
+      {% else %}<div class="ad-panel-b ik-muted">Nadie está esperando un producto agotado.</div>{% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

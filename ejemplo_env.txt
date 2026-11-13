@@ -1,0 +1,16 @@
+# Copiá este archivo con el nombre .env y completá los valores. El .env NO se sube a GitHub.
+
+# Django
+DJANGO_SECRET_KEY=cambiame-por-una-clave-larga-y-aleatoria
+DJANGO_DEBUG=1
+DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
+
+# Mercado Pago (si MP_ACCESS_TOKEN queda vacío, la tienda funciona en MODO DEMO)
+MP_ACCESS_TOKEN=
+MP_EXTERNAL_POS_ID=IURKO_WEB_01
+MP_WEBHOOK_SECRET=
+MP_QR_MINUTOS=15
+
+# Correo (Gmail). Si queda vacío, los correos se muestran en la consola del servidor.
+EMAIL_USER=
+EMAIL_PASSWORD=

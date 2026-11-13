@@ -1,0 +1,36 @@
+{% extends "panel/base_panel.html" %}
+{% block titulo_panel %}Cargar tanda{% endblock %}{% block titulo_top %}Cargar tanda de producción{% endblock %}
+{% block contenido %}
+<div class="ad-head"><div><h1>Cargar tanda</h1><p>Al guardar se descuentan los ingredientes (de las compras más viejas primero) y se generan los códigos de las piezas.</p></div></div>
+
+<form method="post" class="ik-form" data-tanda-form data-necesidad-url="{% url 'panel:necesidad' %}" novalidate>
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="ik-msgs">{% for e in form.non_field_errors %}<div class="ik-msg error">{{ e }}</div>{% endfor %}</div>{% endif %}
+  <div class="ad-cols">
+    <div class="ad-panel">
+      <div class="ad-panel-h"><h3>Datos de la tanda</h3></div>
+      <div class="ad-panel-b">
+        {% for campo in form %}{% if campo.name != 'descontar_insumos' %}
+        <div class="ik-field {% if campo.errors %}has-error{% endif %}"><label for="{{ campo.id_for_label }}">{{ campo.label }}</label>{{ campo }}
+          {% if campo.errors %}<span class="ik-error">{{ campo.errors|join:" " }}</span>{% endif %}
+          {% if campo.name == 'cantidad_piezas' %}<span class="ik-hint">El peso se reparte igual entre las piezas; después podés cargar el peso real de cada una.</span>{% endif %}
+          {% if campo.name == 'dias_estacionamiento' %}<span class="ik-hint">{{ campo.help_text }} <b data-venta-desde></b></span>{% endif %}
+          {% if campo.name == 'dias_vencimiento' %}<span class="ik-hint">{{ campo.help_text }} <b data-vence-el></b></span>{% endif %}</div>
+        {% endif %}{% endfor %}
+        <label class="ik-check">{{ form.descontar_insumos }} {{ form.descontar_insumos.label }}</label>
+      </div>
+      <div class="ad-panel-f"><a class="ik-btn ik-btn-ghost" href="{% url 'panel:tandas' %}">Cancelar</a><button class="ik-btn ik-btn-primary"><span class="material-symbols-outlined">save</span>Guardar y generar piezas</button></div>
+    </div>
+    <div class="ad-panel">
+      <div class="ad-panel-h"><h3>Ingredientes necesarios</h3></div>
+      <div class="ad-panel-b" data-necesidad><p class="ik-muted">Elegí la receta y los kg para ver los ingredientes.</p></div>
+      <div class="ad-panel-b" style="border-top:1px solid var(--line)">
+        <span class="ik-label">Código de las piezas</span>
+        <p class="ik-small ik-muted" style="margin:.4rem 0 0">14 números: <span class="ik-code"><span class="f">DDMMAAAA</span><span class="n">TT</span><span class="f">NNNN</span></span> — fecha de producción, n.º de tanda del día (01, 02…) y n.º de pieza. Ej.: <span class="ik-code"><span class="f">05112026</span><span class="n">01</span><span class="f">0021</span></span></p>
+      </div>
+    </div>
+  </div>
+</form>
+{{ dias_recetas|json_script:"dias-recetas-json" }}
+{{ venc_recetas|json_script:"venc-recetas-json" }}
+{% endblock %}
