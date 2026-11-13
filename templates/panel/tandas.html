@@ -1,0 +1,61 @@
+{% extends "panel/base_panel.html" %}
+{% load iurko %}
+{% block titulo_panel %}Inventario{% endblock %}{% block titulo_top %}Inventario por tanda{% endblock %}
+{% block contenido %}
+<div class="ad-head"><div><h1>Inventario por tanda</h1><p>Ordenado por FIFO: arriba la que se produjo primero. De cada receta se vende siempre la tanda más vieja que tenga piezas libres (marcada en verde como <b>“1.º en salir”</b>); las siguientes de la misma receta esperan su turno (2.º, 3.º…).</p></div>
+  <div class="ad-head-acc"><a class="ik-btn ik-btn-primary" href="{% url 'panel:tanda_nueva' %}"><span class="material-symbols-outlined">add</span>Cargar tanda</a></div></div>
+
+{% include "panel/_alertas_vencimiento.html" %}
+{% include "panel/_alertas_inventario.html" %}
+
+<div class="ad-panel">
+  <form class="ad-panel-h" method="get">
+    <div class="ik-flex ik-wrap">
+      <select class="ik-select" name="estado" onchange="this.form.submit()" style="width:auto">
+        <option value="vigentes" {% if estado == 'vigentes' %}selected{% endif %}>Activas y pausadas</option>
+        {% for k, v in estados %}<option value="{{ k }}" {% if estado == k %}selected{% endif %}>{{ v }}</option>{% endfor %}
+        <option value="todas" {% if estado == 'todas' %}selected{% endif %}>Todas</option>
+      </select>
+      <select class="ik-select" name="receta" onchange="this.form.submit()" style="width:auto">
+        <option value="">Todas las recetas</option>
+        {% for r in recetas %}<option value="{{ r.pk }}" {% if receta_sel == r.pk|stringformat:"s" %}selected{% endif %}>{{ r.nombre }}</option>{% endfor %}
+      </select>
+    </div>
+    <label class="ik-search"><span class="material-symbols-outlined">search</span><input type="search" name="q" value="{{ q }}" placeholder="Código o receta…"></label>
+  </form>
+
+  {% if tandas %}
+  <div class="ik-table-wrap"><table class="ik-table">
+    <thead><tr><th>Código</th><th>Receta</th><th>Producción</th><th class="num">Kg</th><th class="num">Piezas libres</th><th style="width:170px">Stock</th><th>Estado</th><th class="acc"></th></tr></thead>
+    <tbody>
+    {% for t in tandas %}
+      {% with est=t.etiqueta_estado %}
+      <tr class="{% if t.estado == 'PAUSADA' %}is-paused{% elif t.fifo %}is-fifo{% endif %}">
+        <td><a href="{% url 'panel:tanda' t.pk %}">{{ t.codigo|codigo }}</a></td>
+        <td><b>{{ t.receta.nombre }}</b>
+          {% if t.fifo %}<div class="ad-turno ad-turno-1" title="Es la tanda más vieja de esta receta con piezas libres: se vende primero">1.º en salir · se vende ahora</div>
+          {% elif t.turno %}<div class="ad-turno" title="Sale cuando se terminen las piezas de las tandas anteriores de esta receta">{{ t.turno }}.º en salir</div>
+          {% elif t.estacionando %}<div class="ad-turno">A la venta el {{ t.fecha_disponible|date:"d/m" }}</div>
+          {% elif t.estado == 'PAUSADA' %}<div class="ad-turno">Pausada: no sale</div>{% endif %}</td>
+        <td>{{ t.fecha_produccion|date:"d/m/Y" }}</td>
+        <td class="num">{{ t.kg_producidos|cant }}</td>
+        <td class="num">{{ t.piezas_disp }} / {{ t.cantidad_piezas }}</td>
+        <td><div class="ad-bar" title="{{ t.piezas_vend }} vendidas · {{ t.piezas_res }} reservadas · {{ t.piezas_disp }} libres"><span class="vend" style="width:{{ t.pct_vend }}%"></span><span class="res" style="width:{{ t.pct_res }}%"></span><span class="{% if t.estado == 'PAUSADA' %}pausa{% else %}disp{% endif %}" style="width:{{ t.pct_disp }}%"></span></div></td>
+        <td><span class="ik-est {{ est.1 }}">{{ est.0 }}</span></td>
+        <td class="acc">
+          {% if t.estado == 'ACTIVA' %}<button class="ik-btn ik-btn-ghost ik-btn-sm" type="button" data-modal-abrir="pausa-{{ t.pk }}">Pausar</button>
+          {% elif t.estado == 'PAUSADA' %}<form method="post" action="{% url 'panel:tanda_reanudar' t.pk %}" style="display:inline">{% csrf_token %}<input type="hidden" name="volver" value="{{ request.get_full_path }}"><button class="ik-btn ik-btn-accent ik-btn-sm">Reanudar</button></form>{% endif %}
+        </td>
+      </tr>
+      {% endwith %}
+    {% endfor %}
+    </tbody>
+  </table></div>
+  <div class="ad-panel-f" style="justify-content:flex-start"><div class="ad-leyenda" style="margin:0"><span><i class="st-libre"></i>Libres</span><span><i class="st-res"></i>Reservadas (QR en curso)</span><span><i class="st-vend"></i>Vendidas</span><span><i class="st-pausa"></i>Tanda pausada</span><span><i class="st-libre" style="width:4px;border-radius:0"></i>Borde verde: la tanda de la que se vende ahora</span></div></div>
+  {% else %}
+  <div class="ad-panel-b"><div class="ik-vacio"><span class="material-symbols-outlined">inventory_2</span><h3>No hay tandas con ese filtro</h3><a class="ik-btn ik-btn-primary" href="{% url 'panel:tanda_nueva' %}">Cargar la primera tanda</a></div></div>
+  {% endif %}
+</div>
+
+{% for t in tandas %}{% if t.estado == 'ACTIVA' %}{% include "panel/_modal_pausa.html" with tanda=t volver=request.get_full_path %}{% endif %}{% endfor %}
+{% endblock %}

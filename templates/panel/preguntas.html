@@ -1,0 +1,38 @@
+{% extends "panel/base_panel.html" %}
+{% block titulo_panel %}Preguntas frecuentes{% endblock %}{% block titulo_top %}Preguntas frecuentes de la tienda{% endblock %}
+{% block contenido %}
+<div class="ad-head"><div><h1>Preguntas frecuentes</h1><p>Lo que ven los clientes en “Preguntas frecuentes”. Se muestran ordenadas por el número de “Orden” (de menor a mayor).</p></div>
+  <div class="ad-head-acc"><a class="ik-btn ik-btn-ghost" href="{% url 'tienda:ayuda' %}" target="_blank"><span class="material-symbols-outlined">visibility</span>Ver cómo queda</a></div></div>
+
+{% if not pagina.whatsapp_link %}<div class="ik-msgs"><div class="ik-msg warning"><span>El botón de WhatsApp todavía no aparece en la tienda: cargá el número en <a href="{% url 'panel:nosotros' %}">Página “Nosotros” → Teléfono / WhatsApp</a>.</span></div></div>
+{% else %}<div class="ik-msgs"><div class="ik-msg success"><span>Al lado de las preguntas aparece el botón de WhatsApp con el número {{ pagina.telefono }} (se cambia en <a href="{% url 'panel:nosotros' %}">Página “Nosotros”</a>).</span></div></div>{% endif %}
+
+<form method="post" class="ik-form" novalidate>
+  {% csrf_token %}
+  {{ formset.management_form }}
+  {% for e in formset.non_form_errors %}<div class="ik-msg error">{{ e }}</div>{% endfor %}
+  <div class="ad-panel">
+    <div class="ad-panel-h"><h3>Preguntas</h3><button type="button" class="ik-btn ik-btn-ghost ik-btn-sm" data-agregar><span class="material-symbols-outlined">add</span>Agregar pregunta</button></div>
+    <div class="ik-table-wrap"><table class="ik-table" data-formset="{{ formset.prefix }}">
+      <thead><tr><th>Pregunta y respuesta</th><th style="width:100px">Orden</th><th style="width:90px">Visible</th><th style="width:56px"></th></tr></thead>
+      <tbody data-filas>
+      {% for f in formset %}
+        <tr data-fila>
+          <td>{{ f.pregunta }}{% for e in f.pregunta.errors %}<span class="ik-error">{{ e }}</span>{% endfor %}
+            <div style="margin-top:.5rem">{{ f.respuesta }}</div>{% for e in f.respuesta.errors %}<span class="ik-error">{{ e }}</span>{% endfor %}</td>
+          <td>{{ f.orden }}</td><td class="ik-center">{{ f.visible }}</td>
+          <td class="acc"><span hidden>{{ f.DELETE }}</span>{{ f.id }}<button type="button" class="ik-btn ik-btn-icon ik-quitar" data-quitar aria-label="Borrar pregunta" title="Borrar"><span class="material-symbols-outlined">delete</span></button></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    <template data-molde><tr data-fila>
+      <td>{{ formset.empty_form.pregunta }}<div style="margin-top:.5rem">{{ formset.empty_form.respuesta }}</div></td>
+      <td>{{ formset.empty_form.orden }}</td><td class="ik-center">{{ formset.empty_form.visible }}</td>
+      <td class="acc"><span hidden>{{ formset.empty_form.DELETE }}</span>{{ formset.empty_form.id }}<button type="button" class="ik-btn ik-btn-icon ik-quitar" data-quitar aria-label="Borrar pregunta" title="Borrar"><span class="material-symbols-outlined">delete</span></button></td>
+    </tr></template>
+    <div class="ad-panel-f" style="justify-content:space-between"><span class="ik-caption">Destildá “Visible” para ocultar una pregunta sin borrarla. Los cambios se aplican al guardar.</span>
+      <button class="ik-btn ik-btn-primary"><span class="material-symbols-outlined">save</span>Guardar preguntas</button></div>
+  </div>
+</form>
+{% endblock %}

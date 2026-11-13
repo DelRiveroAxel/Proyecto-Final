@@ -1,0 +1,57 @@
+{% extends "tienda/base_tienda.html" %}
+{% load iurko %}
+{% block titulo %}Catálogo · Iurko Chacinados{% endblock %}
+{% block contenido %}
+<div class="ik-pagehead">
+  <div>
+    <div class="ik-crumbs">Bodega &amp; cava / <b>Catálogo</b></div>
+    <h1>Selección de Salumería &amp; Curados</h1>
+    <p>Elaboraciones lentas, maduradas en secadero natural. El stock que ves es real: cada pieza está en cámara.</p>
+  </div>
+  <div class="ik-lote-actual"><div><small>Se cobra el peso real</small><b>Precios por kilo</b></div><span class="material-symbols-outlined" style="color:var(--leather)">scale</span></div>
+</div>
+
+{% if not q %}{% if slides or destacados %}
+<section class="ik-hero" data-hero>
+  {% if slides %}
+    {% for d in slides %}{% include "tienda/_slide.html" with on=forloop.first foto=d.foto etiqueta=d.etiqueta icono=d.icono titulo=d.titulo texto=d.texto boton=d.boton_texto enlace=d.enlace %}{% endfor %}
+  {% else %}
+    {% for d in destacados %}{% include "tienda/_slide.html" with on=forloop.first foto=d.foto_principal etiqueta=d.subtitulo|default:d.get_categoria_display icono="local_fire_department" titulo=d.nombre texto=d.descripcion|truncatewords:22 boton="Ver producto" enlace=d.get_absolute_url %}{% endfor %}
+  {% endif %}
+  {% with total=slides|length|default:destacados|length %}{% if total > 1 %}
+    <button class="ik-hero-ctrl prev" type="button" data-hero-prev aria-label="Anterior"><span class="material-symbols-outlined">chevron_left</span></button>
+    <button class="ik-hero-ctrl next" type="button" data-hero-next aria-label="Siguiente"><span class="material-symbols-outlined">chevron_right</span></button>
+    <div class="ik-dots">{% for d in slides|default:destacados %}<button type="button" class="{% if forloop.first %}on{% endif %}" data-hero-dot="{{ forloop.counter0 }}" aria-label="Ir a la diapositiva {{ forloop.counter }}"></button>{% endfor %}</div>
+  {% endif %}{% endwith %}
+  {% if marca.mostrar_sello %}<div class="ik-sello"><div><small>Desde {{ marca.anio_fundacion|stringformat:"d" }}</small><b>IURKO</b>{% if marca.sello_linea %}<small>{{ marca.sello_linea }}</small>{% endif %}</div></div>{% endif %}
+</section>
+{% endif %}{% endif %}
+
+<form class="ik-toolbar" method="get">
+  <div class="ik-toolbar-total"><span class="material-symbols-outlined">tune</span>{{ con_stock }} con stock · {{ recetas|length }} productos</div>
+  <div class="ik-toolbar-orden">
+    {% for clave, o in ordenes.items %}<button class="ik-pill {% if orden == clave %}on{% endif %}" name="orden" value="{{ clave }}">{{ o.0 }}</button>{% endfor %}
+    <select class="ik-select" name="categoria" onchange="this.form.submit()" style="height:34px;width:auto;font-size:.8rem;border-radius:9999px">
+      <option value="">Todos los tipos</option>
+      {% for k, v in categorias %}<option value="{{ k }}" {% if categoria == k %}selected{% endif %}>{{ v }}</option>{% endfor %}
+    </select>
+  </div>
+  <label class="ik-search"><span class="material-symbols-outlined">search</span><input type="search" name="q" value="{{ q }}" placeholder="Buscar corte…"></label>
+</form>
+
+{% if recetas %}
+  <div class="ik-grid">{% for r in recetas %}{% include "tienda/_tarjeta.html" %}{% endfor %}</div>
+{% else %}
+  <div class="ik-vacio"><span class="material-symbols-outlined">search_off</span><h3>No encontramos productos</h3><p>Probá con otra búsqueda o mirá <a href="{% url 'tienda:catalogo' %}">todo el catálogo</a>.</p></div>
+{% endif %}
+
+<section class="ik-promesa">
+  <div>
+    <span class="ik-eyebrow">Compromiso de origen</span>
+    <h2>¿Cómo conservamos la pureza del sabor?</h2>
+    <p class="ik-muted">Cada pieza sale de nuestras bodegas de curado con su código de producción, para saber de qué tanda viene y despachar siempre primero la que se hizo antes.</p>
+    <ul><li><span class="material-symbols-outlined">ac_unit</span>Envío refrigerado</li><li><span class="material-symbols-outlined">verified</span>Sin aditivos químicos</li><li><span class="material-symbols-outlined">qr_code_2</span>Pago con QR de Mercado Pago</li></ul>
+  </div>
+  <div class="ik-promesa-card"><span class="material-symbols-outlined" style="font-size:2rem;color:var(--salumi)">notifications_active</span><h3>¿Se agotó?</h3><p class="ik-small">Pedí que te avisemos y te escribimos apenas salga la próxima tanda.</p></div>
+</section>
+{% endblock %}

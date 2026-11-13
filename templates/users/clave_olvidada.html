@@ -1,0 +1,20 @@
+{% extends "users/base_auth.html" %}
+{% block titulo %}Recuperar contraseña · Iurko Chacinados{% endblock %}
+{% block tarjeta %}
+<div class="ik-auth-brand">
+  <div class="ik-auth-sello"><span class="ik-avatar"><span class="material-symbols-outlined" style="font-size:2.4rem;color:var(--wine)">lock_reset</span></span></div>
+  <h2>¿Olvidaste tu contraseña?</h2>
+  <p>Escribí el correo con el que te registraste y te mandamos un enlace para crear una nueva.</p>
+</div>
+<form method="post" class="ik-form" novalidate>
+  {% csrf_token %}
+  <div class="ik-field {% if form.email.errors %}has-error{% endif %}">
+    <label for="{{ form.email.id_for_label }}">Correo electrónico</label>
+    <div class="ik-input-icon"><span class="material-symbols-outlined">mail</span>{{ form.email }}</div>
+    {% if form.email.errors %}<span class="ik-error">{{ form.email.errors|join:" " }}</span>{% endif %}
+  </div>
+  <button class="ik-btn ik-btn-primary ik-btn-block ik-btn-lg">Enviarme el enlace</button>
+</form>
+<div class="ik-auth-sep">¿Te acordaste?</div>
+<p class="ik-auth-alt"><a href="{% url 'login' %}">Volver a iniciar sesión</a></p>
+{% endblock %}

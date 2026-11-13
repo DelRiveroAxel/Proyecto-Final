@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% load iurko %}
+{% block titulo %}Etiquetas{% if tandas_sel %} · {% for t in tandas_sel %}{{ t.codigo }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %} · Iurko{% endblock %}
+{% block body_class %}ik-body et-page et-f{{ formato }}{% if con_cortes %} et-cortes{% endif %}{% endblock %}
+{% block cuerpo %}
+<form class="et-barra no-print" method="get">
+  <div class="et-barra-top">
+    <a class="ik-btn ik-btn-ghost ik-btn-sm" href="{% if tandas_sel|length == 1 %}{% url 'panel:tanda' tandas_sel.0.pk %}{% else %}{% url 'panel:tandas' %}{% endif %}"><span class="material-symbols-outlined">arrow_back</span>Volver</a>
+    <div class="et-titulo"><b>Etiquetas para imprimir</b>
+      <span>{% if n_piezas %}{{ n_piezas }} etiqueta{{ n_piezas|pluralize }} en {{ hojas|length }} hoja{{ hojas|length|pluralize }} A4{% else %}Elegí una o más tandas{% endif %}</span></div>
+    <button class="ik-btn ik-btn-primary" type="button" onclick="window.print()" {% if not n_piezas %}disabled{% endif %}><span class="material-symbols-outlined">print</span>Imprimir</button>
+  </div>
+
+  <div class="et-opciones">
+    <fieldset class="et-tandas">
+      <legend>Tandas</legend>
+      <div class="et-tandas-lista">
+        {% for t in vigentes %}
+        <label class="ik-check"><input type="checkbox" name="tanda" value="{{ t.pk }}" {% if t.pk in ids %}checked{% endif %} onchange="this.form.submit()">
+          <span><b>{{ t.receta.nombre }}</b> <span class="ik-caption">{{ t.codigo }} · {{ t.fecha_produccion|date:"d/m" }} · {{ t.cantidad_piezas }} pzas</span></span></label>
+        {% empty %}
+        <p class="ik-caption">No hay tandas activas.</p>
+        {% endfor %}
+        {% for t in tandas_sel %}{% if t.estado != 'ACTIVA' and t.estado != 'PAUSADA' %}<input type="hidden" name="tanda" value="{{ t.pk }}">{% endif %}{% endfor %}
+      </div>
+    </fieldset>
+    <div class="et-campos">
+      <label class="ik-field"><span>Tipo de hoja</span>
+        <select class="ik-select" name="formato" onchange="this.form.submit()">{% for k, n in formatos %}<option value="{{ k }}" {% if k == formato %}selected{% endif %}>{{ n }}</option>{% endfor %}</select></label>
+      <label class="ik-field"><span>Qué piezas</span>
+        <select class="ik-select" name="piezas" onchange="this.form.submit()">
+          <option value="todas" {% if cuales != 'libres' %}selected{% endif %}>Todas (no las de baja)</option>
+          <option value="libres" {% if cuales == 'libres' %}selected{% endif %}>Solo las sin vender</option></select></label>
+      <label class="ik-field"><span>Empezar en la etiqueta</span>
+        <select class="ik-select" name="inicio" onchange="this.form.submit()">{% for n in posiciones %}<option value="{{ n }}" {% if n == inicio %}selected{% endif %}>{{ n }}{% if n == 1 %} (hoja nueva){% endif %}</option>{% endfor %}</select>
+        <small class="ik-caption">Si ya usaste parte de una hoja, salteá las que faltan.</small></label>
+      <div class="et-checks">
+        <input type="hidden" name="venc" value="0"><label class="ik-check"><input type="checkbox" name="venc" value="1" {% if con_venc %}checked{% endif %} onchange="this.form.submit()"> Mostrar “consumir antes de”</label>
+        <input type="hidden" name="cortes" value="0"><label class="ik-check"><input type="checkbox" name="cortes" value="1" {% if con_cortes %}checked{% endif %} onchange="this.form.submit()"> Líneas para recortar (hoja común)</label>
+      </div>
+    </div>
+  </div>
+  <p class="et-ayuda"><span class="material-symbols-outlined">info</span><span>Al imprimir elegí <b>A4</b>, escala <b>100 %</b> (“Tamaño real”) y márgenes <b>Ninguno</b>. Probá primero en una hoja común para ver que coincida con las etiquetas.</span></p>
+</form>
+
+<main class="et-hojas">
+  {% for hoja in hojas %}
+  <section class="et-hoja">
+    {% for p in hoja %}
+      {% if p %}
+      <div class="et">
+        <div class="et-marca">Iurko Chacinados</div>
+        <div class="et-nombre">{{ p.tanda.receta.nombre }}</div>
+        <div class="et-fila">
+          <span class="et-peso">{{ p.peso_g|peso }}</span>
+          {% if con_venc and p.tanda.fecha_vencimiento %}<span class="et-venc">Consumir antes del<b>{{ p.tanda.fecha_vencimiento|date:"d/m/Y" }}</b></span>{% endif %}
+        </div>
+        <div class="et-codigo"><span>{{ p.codigo|slice:":8" }}</span><b>{{ p.codigo|slice:"8:10" }}</b><b>{{ p.codigo|slice:"10:" }}</b></div>
+      </div>
+      {% else %}<div class="et et-vacia"></div>{% endif %}
+    {% endfor %}
+  </section>
+  {% empty %}
+  <div class="ik-vacio no-print"><span class="material-symbols-outlined">label</span><h3>Elegí arriba las tandas</h3><p>Se arma una etiqueta por pieza, en orden FIFO, con la receta, el peso y el código de 14 números.</p></div>
+  {% endfor %}
+</main>
+{% endblock %}

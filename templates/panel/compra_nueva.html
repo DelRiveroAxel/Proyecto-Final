@@ -1,0 +1,54 @@
+{% extends "panel/base_panel.html" %}
+{% block titulo_panel %}Cargar compra{% endblock %}{% block titulo_top %}Cargar compra de materia prima{% endblock %}
+{% block contenido %}
+<div class="ad-head"><div><h1>Cargar compra</h1><p>Fecha, vendedor, el ticket o factura y qué compraste.</p></div></div>
+
+<form method="post" enctype="multipart/form-data" class="ik-form" novalidate>
+  {% csrf_token %}
+  {% if form.non_field_errors or formset.non_form_errors %}<div class="ik-msgs">{% for e in form.non_field_errors %}<div class="ik-msg error">{{ e }}</div>{% endfor %}{% for e in formset.non_form_errors %}<div class="ik-msg error">{{ e }}</div>{% endfor %}</div>{% endif %}
+
+  <div class="ad-panel">
+    <div class="ad-panel-h"><h3>Comprobante</h3></div>
+    <div class="ad-panel-b ad-cols">
+      <div class="ik-field {% if form.fecha.errors %}has-error{% endif %}"><label for="{{ form.fecha.id_for_label }}">Fecha de compra</label>{{ form.fecha }}{% if form.fecha.errors %}<span class="ik-error">{{ form.fecha.errors|join:" " }}</span>{% endif %}</div>
+      <div class="ik-field {% if form.vendedor.errors %}has-error{% endif %}"><label for="{{ form.vendedor.id_for_label }}">{{ form.vendedor.label }}</label>{{ form.vendedor }}
+        <datalist id="vendedores">{% for v in vendedores %}<option value="{{ v }}">{% endfor %}</datalist>
+        {% if form.vendedor.errors %}<span class="ik-error">{{ form.vendedor.errors|join:" " }}</span>{% else %}<span class="ik-hint">Si es nuevo, se agrega solo.</span>{% endif %}</div>
+      <div class="ik-field"><label for="{{ form.tipo_comprobante.id_for_label }}">Tipo de comprobante</label>{{ form.tipo_comprobante }}</div>
+      <div class="ik-field"><label for="{{ form.numero_comprobante.id_for_label }}">N.º de comprobante (opcional)</label>{{ form.numero_comprobante }}</div>
+      <div class="ik-field full {% if form.comprobante.errors %}has-error{% endif %}"><span class="ik-label">Ticket o factura</span>
+        <label class="ik-file"><span class="material-symbols-outlined">upload_file</span><b>Subir foto o PDF</b><span class="ik-caption">JPG, PNG, WEBP o PDF · máx. 5 MB</span>{{ form.comprobante }}</label>
+        {% if form.comprobante.errors %}<span class="ik-error">{{ form.comprobante.errors|join:" " }}</span>{% endif %}</div>
+      <div class="ik-field full"><label for="{{ form.observaciones.id_for_label }}">Observaciones</label>{{ form.observaciones }}</div>
+    </div>
+  </div>
+
+  <div class="ad-panel">
+    <div class="ad-panel-h"><h3>Qué compraste</h3><button type="button" class="ik-btn ik-btn-ghost ik-btn-sm" data-agregar data-para="{{ formset.prefix }}"><span class="material-symbols-outlined">add</span>Agregar renglón</button></div>
+    {{ formset.management_form }}
+    <div class="ik-table-wrap"><table class="ik-table" data-formset="{{ formset.prefix }}">
+      <thead><tr><th>Materia prima</th><th style="width:150px">Cantidad</th><th style="width:150px">Precio unitario</th><th style="width:130px">Lote</th><th style="width:160px">Vencimiento</th><th style="width:56px"></th></tr></thead>
+      <tbody data-filas>
+      {% for f in formset %}
+        <tr data-fila>
+          <td>{{ f.tipo }}{% for e in f.tipo.errors %}<span class="ik-error">{{ e }}</span>{% endfor %}</td>
+          <td><div class="ik-flex" style="gap:.4rem">{{ f.cantidad }}<span class="ik-caption" data-unidad></span></div>{% for e in f.cantidad.errors %}<span class="ik-error">{{ e }}</span>{% endfor %}</td>
+          <td>{{ f.precio_unitario }}{% for e in f.precio_unitario.errors %}<span class="ik-error">{{ e }}</span>{% endfor %}</td>
+          <td>{{ f.lote }}</td><td>{{ f.vencimiento }}</td>
+          <td class="acc"><span hidden>{{ f.DELETE }}</span>{{ f.id }}{{ f.compra }}<button type="button" class="ik-btn ik-btn-icon ik-quitar" data-quitar aria-label="Quitar renglón" title="Quitar"><span class="material-symbols-outlined">delete</span></button></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    <template data-molde><tr data-fila>
+      <td>{{ formset.empty_form.tipo }}</td>
+      <td><div class="ik-flex" style="gap:.4rem">{{ formset.empty_form.cantidad }}<span class="ik-caption" data-unidad></span></div></td>
+      <td>{{ formset.empty_form.precio_unitario }}</td><td>{{ formset.empty_form.lote }}</td><td>{{ formset.empty_form.vencimiento }}</td>
+      <td class="acc"><span hidden>{{ formset.empty_form.DELETE }}</span>{{ formset.empty_form.id }}{{ formset.empty_form.compra }}<button type="button" class="ik-btn ik-btn-icon ik-quitar" data-quitar aria-label="Quitar renglón" title="Quitar"><span class="material-symbols-outlined">delete</span></button></td>
+    </tr></template>
+    {{ unidades_tipos|json_script:"unidades-json" }}
+    <div class="ad-panel-f"><a class="ik-btn ik-btn-ghost" href="{% url 'panel:compras' %}">Cancelar</a><button class="ik-btn ik-btn-primary"><span class="material-symbols-outlined">save</span>Guardar compra</button></div>
+  </div>
+  <p class="ik-caption">Al elegir una materia prima en el último renglón aparece otro. ¿Falta alguna en la lista? <a href="{% url 'panel:insumos' %}">Agregala acá</a> (podés usar kg, g, unidades…).</p>
+</form>
+{% endblock %}

@@ -1,0 +1,180 @@
+{% extends "panel/base_panel.html" %}
+{% load iurko %}
+{% block titulo_panel %}Tanda {{ tanda.codigo }}{% endblock %}{% block titulo_top %}Tanda {{ tanda.codigo }}{% endblock %}
+{% block contenido %}
+{% with est=tanda.etiqueta_estado %}
+<div class="ad-head">
+  <div><div class="ik-crumbs"><a href="{% url 'panel:tandas' %}">Inventario</a> / <b>{{ tanda.codigo }}</b></div>
+    <h1>{{ tanda.receta.nombre }}</h1>
+    <p>{{ tanda.codigo|codigo }} · producida el {{ tanda.fecha_produccion|date:"d/m/Y" }} · a la venta desde el {{ tanda.fecha_disponible|date:"d/m/Y" }}{% if tanda.fecha_vencimiento %} · consumir antes del {{ tanda.fecha_vencimiento|date:"d/m/Y" }}{% endif %} · <span class="ik-est {{ est.1 }}">{{ est.0 }}</span></p></div>
+  <div class="ad-head-acc">
+    <a class="ik-btn ik-btn-ghost" href="{% url 'panel:etiquetas' %}?tanda={{ tanda.pk }}"><span class="material-symbols-outlined">print</span>Etiquetas</a>
+    <a class="ik-btn ik-btn-ghost" href="{% url 'panel:traza_tanda' tanda.pk %}"><span class="material-symbols-outlined">account_tree</span>Trazabilidad</a>
+    {% if tanda.estado == 'ACTIVA' %}<button class="ik-btn ik-btn-ghost" type="button" data-modal-abrir="pausa-{{ tanda.pk }}"><span class="material-symbols-outlined">pause</span>Pausar tanda</button>
+    {% elif tanda.estado == 'PAUSADA' %}<form method="post" action="{% url 'panel:tanda_reanudar' tanda.pk %}">{% csrf_token %}<button class="ik-btn ik-btn-accent"><span class="material-symbols-outlined">play_arrow</span>Reanudar venta</button></form>{% endif %}
+    {% if tanda.estado == 'ACTIVA' or tanda.estado == 'PAUSADA' %}<button class="ik-btn ik-btn-danger" type="button" data-modal-abrir="anular"><span class="material-symbols-outlined">block</span>Dar de baja la tanda</button>{% endif %}
+    {% if se_puede_eliminar %}<button class="ik-btn ik-btn-danger" type="button" data-modal-abrir="eliminar"><span class="material-symbols-outlined">delete</span>Eliminar</button>{% endif %}
+  </div>
+</div>
+
+{% if tanda.estado == 'ACTIVA' or tanda.estado == 'PAUSADA' %}
+<div class="ad-panel"><form class="ad-panel-b ik-flex ik-wrap" method="post" action="{% url 'panel:tanda_fecha_venta' tanda.pk %}" style="justify-content:space-between">
+  {% csrf_token %}
+  <div><span class="ik-label">Estacionamiento</span>
+    <p class="ik-small ik-muted" style="margin:.2rem 0 0">{% if tanda.estacionando %}Estaciona hasta el <b>{{ tanda.fecha_disponible|date:"d/m/Y" }}</b>: hasta esa fecha no aparece en la tienda.{% else %}A la venta desde el {{ tanda.fecha_disponible|date:"d/m/Y" }}. Si necesita más estacionamiento, poné una fecha futura.{% endif %}</p></div>
+  <div class="ik-flex ik-wrap">
+    <label class="ik-sr" for="fecha-venta">A la venta desde</label>
+    <input class="ik-input" type="date" id="fecha-venta" name="fecha" value="{{ tanda.fecha_disponible|date:'Y-m-d' }}" min="{{ tanda.fecha_produccion|date:'Y-m-d' }}" style="width:auto">
+    <button class="ik-btn ik-btn-ghost ik-btn-sm">Guardar fecha</button>
+    {% if tanda.estacionando %}<button class="ik-btn ik-btn-primary ik-btn-sm" name="ahora" value="1">Liberar a la venta hoy</button>{% endif %}
+  </div>
+</form>
+<form class="ad-panel-b ik-flex ik-wrap" id="vencimiento" method="post" action="{% url 'panel:tanda_vencimiento' tanda.pk %}" style="justify-content:space-between;border-top:1px solid var(--line)">
+  {% csrf_token %}
+  <div><span class="ik-label">Vencimiento</span>
+    <p class="ik-small ik-muted" style="margin:.2rem 0 0">{% if not tanda.fecha_vencimiento %}Sin fecha de vencimiento: se vende hasta que se termine.
+      {% elif tanda.vencida %}<b style="color:var(--urg-rojo)">Venció el {{ tanda.fecha_vencimiento|date:"d/m/Y" }}</b>: ya no se vende en la tienda.
+      {% else %}Consumir antes del <b>{{ tanda.fecha_vencimiento|date:"d/m/Y" }}</b> (faltan {{ tanda.dias_para_vencer }} día{{ tanda.dias_para_vencer|pluralize }}). Ese día deja de venderse sola.{% endif %}</p></div>
+  <div class="ik-flex ik-wrap">
+    <label class="ik-sr" for="fecha-venc">Consumir antes de</label>
+    <input class="ik-input" type="date" id="fecha-venc" name="fecha" value="{{ tanda.fecha_vencimiento|date:'Y-m-d' }}" style="width:auto">
+    <button class="ik-btn ik-btn-ghost ik-btn-sm">Guardar vencimiento</button>
+  </div>
+</form>
+{% if tanda.vencida and resumen.disp %}
+<form class="ad-panel-b ik-flex ik-wrap" method="post" action="{% url 'panel:tanda_baja_vencidas' tanda.pk %}" style="justify-content:space-between;border-top:1px solid var(--line)">
+  {% csrf_token %}
+  <p class="ik-small" style="margin:0">Quedan <b>{{ resumen.disp }} piezas libres vencidas</b>. Si las descartás, dalas de baja: cuentan como merma en los reportes.</p>
+  <button class="ik-btn ik-btn-primary ik-btn-sm"><span class="material-symbols-outlined">delete_sweep</span>Dar de baja {{ resumen.disp }} pieza{{ resumen.disp|pluralize }}</button>
+</form>
+{% endif %}
+</div>
+{% endif %}
+{% if tanda.estado == 'PAUSADA' %}<div class="ik-msgs"><div class="ik-msg warning">Pausada el {{ tanda.pausada_en|date:"d/m/Y H:i" }}: {{ tanda.motivo_pausa }}</div></div>{% endif %}
+{% if tanda.estado == 'ANULADA' %}<div class="ik-msgs"><div class="ik-msg error">Tanda anulada: {{ tanda.motivo_pausa }}</div></div>{% endif %}
+{% if afectados %}<div class="ik-msgs"><div class="ik-msg warning"><span>Hay pedidos sin entregar con piezas de esta tanda:
+  {% for p in afectados %}<a href="{% url 'panel:pedido' p.pk %}"><b>#{{ p.numero }}</b></a>{% if not forloop.last %}, {% endif %}{% endfor %}. Revisalos si pausás o anulás la tanda.</span></div></div>{% endif %}
+
+<div class="ad-kpis">
+  <div class="ad-kpi"><small>Producido</small><b>{{ tanda.kg_producidos|cant }} kg</b><span>{{ tanda.cantidad_piezas }} piezas</span></div>
+  <div class="ad-kpi"><small>Libres</small><b>{{ resumen.disp }}</b><span>{{ resumen.peso_disp|default:0|kg }}</span></div>
+  <div class="ad-kpi"><small>Reservadas / vendidas</small><b>{{ resumen.res }} / {{ resumen.vend }}</b><span>{% if resumen.baja %}{{ resumen.baja }} dadas de baja{% else %}&nbsp;{% endif %}</span></div>
+  <div class="ad-kpi"><small>Costo de insumos</small><b>{{ tanda.costo_insumos|pesos }}</b><span>{% if tanda.desconto_insumos %}{{ tanda.costo_kg|pesos }} por kg · {{ tanda.costo_pieza|pesos }} por pieza{% else %}no se descontaron insumos{% endif %}</span></div>
+</div>
+
+<div class="ad-panel" id="piezas">
+  <div class="ad-panel-h"><h3>Piezas</h3>
+    <div class="ad-leyenda" style="margin:0"><span><i class="st-libre"></i>Libre</span><span><i class="st-res"></i>Reservada</span><span><i class="st-vend"></i>Vendida</span><span><i class="st-pausa"></i>Pausada / baja</span>{% if proxima and proxima.tanda_id == tanda.pk %}<span>Contorno verde: la próxima que sale</span>{% endif %}</div></div>
+  <form class="ad-panel-b" method="post" action="{% url 'panel:tanda_pesos' tanda.pk %}" data-sel-piezas>
+    {% csrf_token %}
+    <div class="ad-sel-barra">
+      <div class="ad-sel-info"><b data-sel-cuenta>0</b> pieza<span data-sel-plural>s</span> marcada<span data-sel-plural>s</span>
+        <span class="ad-sel-atajos">Marcar: <button type="button" class="ik-btn-link" data-sel-marcar="libre">libres</button>{% if resumen.baja %} · <button type="button" class="ik-btn-link" data-sel-marcar="baja">dadas de baja</button>{% endif %}{% if resumen.fuera %} · <button type="button" class="ik-btn-link" data-sel-marcar="fuera">vendidas por fuera</button>{% endif %} · <button type="button" class="ik-btn-link" data-sel-marcar="">ninguna</button></span></div>
+      <div class="ad-sel-acc">
+        <select class="ik-select" name="motivo_baja" aria-label="Motivo de la baja" data-sel-motivo>
+          <option value="">Motivo de la baja…</option>
+          {% for m in motivos_baja %}<option>{{ m }}</option>{% endfor %}<option value="otro">Otro (escribilo)</option>
+        </select>
+        <input class="ik-input" name="motivo_otro" placeholder="¿Cuál?" maxlength="200" data-sel-otro hidden aria-label="Otro motivo">
+        <button class="ik-btn ik-btn-ghost ik-btn-sm" name="accion" value="baja" formaction="{% url 'panel:tanda_piezas' tanda.pk %}" data-sel-btn="libre" disabled><span class="material-symbols-outlined">block</span>Dar de baja</button>
+        {% if tanda.estado != 'ANULADA' %}<button class="ik-btn ik-btn-accent ik-btn-sm" type="button" data-modal-abrir="vender-fuera" data-sel-btn="libre" disabled><span class="material-symbols-outlined">storefront</span>Vendida por fuera de la web</button>{% endif %}
+        {% if resumen.baja or resumen.fuera %}{% if tanda.estado != 'ANULADA' %}<button class="ik-btn ik-btn-ghost ik-btn-sm" name="accion" value="reactivar" formaction="{% url 'panel:tanda_piezas' tanda.pk %}" data-sel-btn="baja fuera" disabled><span class="material-symbols-outlined">undo</span>Volver a la venta</button>{% endif %}{% endif %}
+        <button class="ik-btn ik-btn-danger ik-btn-sm" name="accion" value="eliminar" formaction="{% url 'panel:tanda_piezas' tanda.pk %}" data-sel-btn="libre baja" data-confirmar="¿Eliminar las piezas marcadas? Es para piezas que se cargaron de más: desaparecen del sistema y no se pueden recuperar." disabled><span class="material-symbols-outlined">delete</span>Eliminar</button>
+      </div>
+    </div>
+    <p class="ik-caption" style="margin:-.25rem 0 .9rem"><b>Vendida por fuera de la web</b>: se vendió por WhatsApp, en el local o en una feria; cuenta como venta en los reportes. <b>Dar de baja</b>: la pieza existió pero no se vende (rota, consumo propio, muestra…) y cuenta como merma. <b>Eliminar</b>: la pieza no existe, se cargó de más. Las vendidas o reservadas no se pueden tocar.</p>
+    <div class="ad-piezas">
+      {% for p in piezas %}
+      <div id="p{{ p.codigo }}" class="ad-pieza {% if p.estado == 'DISPONIBLE' %}{% if tanda.estado == 'PAUSADA' %}pausa{% else %}disp{% endif %}{% elif p.estado == 'RESERVADA' %}res{% elif p.estado == 'VENDIDA' %}vend{% else %}pausa{% endif %} {% if proxima and p.pk == proxima.pk %}fifo{% endif %}" {% if resaltar == p.codigo %}style="outline:3px solid var(--leather)"{% endif %}>
+        <b>{% if p.estado == 'DISPONIBLE' or p.estado == 'BAJA' and not p.venta or p.vendida_fuera and not p.venta %}<input type="checkbox" class="ad-pieza-sel" name="pieza" value="{{ p.pk }}" data-peso="{{ p.peso_g }}" data-tipo="{% if p.estado == 'BAJA' %}baja{% elif p.vendida_fuera %}fuera{% else %}libre{% endif %}" aria-label="Marcar la pieza {{ p.codigo }}">{% endif %}{{ p.codigo }}</b>
+        {% if p.estado == 'DISPONIBLE' %}<label class="peso"><input class="ik-input" name="peso_{{ p.pk }}" value="{{ p.peso_g }}" inputmode="numeric" aria-label="Peso en gramos de {{ p.codigo }}"><span>g</span></label>
+        {% elif p.vendida_fuera %}<span title="{{ p.motivo_baja }} · {{ p.venta_externa_fecha|date:'d/m/Y' }}{% if p.venta_externa_monto is not None %} · {{ p.venta_externa_monto|pesos }}{% endif %}">{{ p.peso_g }} g · vendida por fuera</span>
+          <div class="ik-caption">{{ p.motivo_baja|cut:"Venta por fuera de la web · "|truncatechars:24 }} · {{ p.venta_externa_fecha|date:"d/m" }}</div>
+        {% else %}<span {% if p.motivo_baja %}title="{{ p.motivo_baja }}"{% endif %}>{{ p.peso_g }} g · {{ p.get_estado_display|lower }}{% if p.estado == 'BAJA' and p.motivo_baja %}: {{ p.motivo_baja|truncatechars:22 }}{% endif %}</span>
+          {% if p.venta %}<div><a href="{% url 'panel:pedido' p.venta.item.pedido_id %}">pedido #{{ p.venta.item.pedido.numero }}</a></div>{% endif %}{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% if resumen.disp %}<div class="ik-flex ik-mt" style="justify-content:flex-end"><span class="ik-caption">¿Pesaste las piezas? Corregí los gramos y guardá.</span><button class="ik-btn ik-btn-primary ik-btn-sm">Guardar pesos</button></div>{% endif %}
+    {% if tanda.estado != 'ANULADA' %}
+    <div class="ik-modal" id="vender-fuera" hidden>
+      <div class="ik-modal-box" data-venta-fuera data-precio-kg="{{ tanda.receta.precio_kg|default:0|stringformat:'s' }}">
+        <div class="ik-modal-h"><h3>Vendida por fuera de la web</h3><button type="button" class="ik-btn ik-btn-icon" data-modal-cerrar aria-label="Cerrar"><span class="material-symbols-outlined">close</span></button></div>
+        <div class="ik-modal-b">
+          <p class="ik-muted">Las <b data-sel-cuenta>0</b> piezas marcadas quedan como <b>vendidas</b> y se cuentan en los reportes y en la trazabilidad. Si fue un error, las podés volver a la venta.</p>
+          <div class="ik-field"><label for="venta-canal">¿Por dónde se vendió?</label>
+            <select class="ik-select" id="venta-canal" name="venta_canal" data-venta-canal>
+              <option value="">Elegí…</option>{% for c in canales_venta %}<option>{{ c }}</option>{% endfor %}</select></div>
+          <div class="ik-field"><label for="venta-cliente">Cliente <span class="ik-caption">(opcional)</span></label>
+            <input class="ik-input" id="venta-cliente" name="venta_cliente" maxlength="80" placeholder="Ej.: Marta de Oberá"></div>
+          <div class="ik-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+            <div class="ik-field"><label for="venta-fecha">Fecha de la venta</label>
+              <input class="ik-input" type="date" id="venta-fecha" name="venta_fecha" value="{{ hoy|date:'Y-m-d' }}" max="{{ hoy|date:'Y-m-d' }}" min="{{ tanda.fecha_produccion|date:'Y-m-d' }}"></div>
+            <div class="ik-field"><label for="venta-importe">Total cobrado <span class="ik-caption">(opcional)</span></label>
+              <input class="ik-input" id="venta-importe" name="venta_importe" inputmode="decimal" placeholder="$" data-venta-importe></div>
+          </div>
+          <p class="ik-caption" data-venta-lista>Si no completás el total, se calcula con el precio por kg de la receta ({{ tanda.receta.precio_kg|pesos }}/kg) y el peso de cada pieza.</p>
+        </div>
+        <div class="ik-modal-f"><button type="button" class="ik-btn ik-btn-ghost" data-modal-cerrar>Cancelar</button>
+          <button class="ik-btn ik-btn-primary" name="accion" value="vender" formaction="{% url 'panel:tanda_piezas' tanda.pk %}"><span class="material-symbols-outlined">storefront</span>Registrar venta</button></div>
+      </div>
+    </div>
+    {% endif %}
+  </form>
+</div>
+
+<div class="ad-panel" id="fotos">
+  <div class="ad-panel-h"><h3>Fotos</h3><span class="ik-caption">La tienda muestra las de la receta y las de esta tanda mientras esté a la venta</span></div>
+  <div class="ad-panel-b">
+    <div class="ad-fotos">
+      {% for img in fotos_receta %}<figure class="ad-foto es-heredada"><img src="{{ img.url }}" alt=""><figcaption>De la receta</figcaption></figure>{% endfor %}
+      {% for f in tanda.fotos.all %}<figure class="ad-foto"><img src="{{ f.imagen.url }}" alt=""><figcaption>De esta tanda</figcaption>
+        <form method="post" action="{% url 'panel:foto_borrar' 'tanda' f.pk %}">{% csrf_token %}<button class="ad-foto-x" title="Quitar foto" aria-label="Quitar foto"><span class="material-symbols-outlined">close</span></button></form></figure>{% endfor %}
+    </div>
+    {% if not fotos_receta and not tanda.fotos.all %}<p class="ik-muted ik-small">Ni la receta ni la tanda tienen fotos. <a href="{% url 'panel:receta' tanda.receta_id %}#fotos">Subí fotos a la receta</a> para que todas sus tandas las usen, o agregá fotos de esta tanda acá abajo.</p>{% endif %}
+    <form method="post" action="{% url 'panel:tanda_fotos' tanda.pk %}" enctype="multipart/form-data" class="ik-flex ik-wrap ik-mt">
+      {% csrf_token %}
+      <label class="ik-file" style="flex:1;min-width:240px;flex-direction:row;padding:1rem"><span class="material-symbols-outlined">add_a_photo</span><b>Agregar fotos de esta tanda</b><span class="ik-caption">(podés elegir varias)</span>{{ form_fotos.fotos }}</label>
+      <button class="ik-btn ik-btn-primary">Subir fotos</button>
+    </form>
+  </div>
+</div>
+
+{% if consumos %}
+<div class="ad-panel">
+  <div class="ad-panel-h"><h3>Materias primas usadas</h3></div>
+  <div class="ik-table-wrap"><table class="ik-table">
+    <thead><tr><th>Materia prima</th><th>Compra</th><th class="num">Cantidad</th><th class="num">$/u</th><th class="num">Subtotal</th></tr></thead>
+    <tbody>{% for c in consumos %}<tr><td>{{ c.lote.tipo.nombre }}</td><td><a href="{% url 'panel:compra' c.lote.compra_id %}">{{ c.lote.compra.proveedor }} · {{ c.lote.compra.fecha|date:"d/m/Y" }}</a>{% if c.lote.lote %} <span class="ik-caption">lote {{ c.lote.lote }}</span>{% endif %}</td>
+      <td class="num">{{ c.cantidad|cant }} {{ c.lote.tipo.unidad }}</td><td class="num">{{ c.precio_unitario|pesos:2 }}</td><td class="num">{{ c.subtotal|pesos:2 }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+</div>
+{% endif %}
+{% if tanda.observaciones %}<div class="ad-panel"><div class="ad-panel-b"><span class="ik-label">Observaciones</span><p class="ik-muted" style="margin:.3rem 0 0">{{ tanda.observaciones }}</p></div></div>{% endif %}
+
+{% if tanda.estado == 'ACTIVA' %}{% include "panel/_modal_pausa.html" with volver=request.path %}{% endif %}
+<div class="ik-modal" id="anular" hidden>
+  <form class="ik-modal-box" method="post" action="{% url 'panel:tanda_anular' tanda.pk %}">{% csrf_token %}
+    <div class="ik-modal-h"><h3>Dar de baja la tanda {{ tanda.codigo }}</h3><button type="button" class="ik-btn ik-btn-icon" data-modal-cerrar aria-label="Cerrar"><span class="material-symbols-outlined">close</span></button></div>
+    <div class="ik-modal-b"><p class="ik-muted">Las <b>{{ resumen.disp }}</b> piezas sin vender se dan de baja (se descartan) y no se pueden recuperar. Si solo querés frenar la venta mientras revisás, usá <b>Pausar</b>.</p>
+      <div class="ik-field"><label for="motivo-anular">Motivo</label><textarea class="ik-textarea" id="motivo-anular" name="motivo" required></textarea></div></div>
+    <div class="ik-modal-f"><button type="button" class="ik-btn ik-btn-ghost" data-modal-cerrar>Cancelar</button><button class="ik-btn ik-btn-danger">Dar de baja definitivamente</button></div>
+  </form>
+</div>
+{% if se_puede_eliminar %}
+<div class="ik-modal" id="eliminar" hidden>
+  <form class="ik-modal-box" method="post" action="{% url 'panel:tanda_eliminar' tanda.pk %}">{% csrf_token %}
+    <div class="ik-modal-h"><h3>Eliminar la tanda {{ tanda.codigo }}</h3><button type="button" class="ik-btn ik-btn-icon" data-modal-cerrar aria-label="Cerrar"><span class="material-symbols-outlined">close</span></button></div>
+    <div class="ik-modal-b">
+      <p class="ik-muted">Es para una tanda <b>cargada por error</b>: se borra con sus {{ tanda.cantidad_piezas }} piezas y fotos, y no queda registro.
+        {% if consumos %}Las materias primas que se descontaron <b>vuelven al depósito</b>.{% endif %}</p>
+      <p class="ik-muted">Si la tanda existió pero se tira o no se vende, usá <b>Dar de baja</b>: así queda en los reportes como merma.</p>
+      <div class="ik-field"><label for="conf-eliminar">Para confirmar, escribí el código <b>{{ tanda.codigo }}</b></label>
+        <input class="ik-input" id="conf-eliminar" name="confirmar" inputmode="numeric" autocomplete="off" required pattern="{{ tanda.codigo }}"></div>
+    </div>
+    <div class="ik-modal-f"><button type="button" class="ik-btn ik-btn-ghost" data-modal-cerrar>Cancelar</button><button class="ik-btn ik-btn-danger"><span class="material-symbols-outlined">delete</span>Eliminar para siempre</button></div>
+  </form>
+</div>
+{% endif %}
+{% endwith %}
+{% endblock %}

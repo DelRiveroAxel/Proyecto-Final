@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block body_class %}ik-body ik-auth{% endblock %}
+{% block cuerpo %}
+<div class="ik-auth-top">
+  <a href="{% url 'tienda:catalogo' %}"><span class="material-symbols-outlined">arrow_back</span>Volver al catálogo</a>
+  <div class="ik-flex" style="gap:.75rem">
+    <span class="ik-auth-lema">Despensa artesanal <span style="color:var(--leather)">•</span> Est. {{ marca.anio_fundacion|stringformat:"d" }}</span>
+    <button class="ik-btn ik-btn-icon ik-theme" type="button" data-tema aria-label="Cambiar entre modo claro y oscuro" title="Modo claro / oscuro">
+      <span class="material-symbols-outlined luna">dark_mode</span><span class="material-symbols-outlined sol">light_mode</span>
+    </button>
+  </div>
+</div>
+<div class="ik-auth-card" {% block card_style %}{% endblock %}>
+  <div class="ik-auth-in">
+    {% block tarjeta %}{% endblock %}
+  </div>
+  {% block pie_tarjeta %}{% endblock %}
+</div>
+<p class="ik-auth-legal">© {% now "Y" %} Iurko Chacinados · Recetas de tradición europea</p>
+{% endblock %}

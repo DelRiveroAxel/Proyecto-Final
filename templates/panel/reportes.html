@@ -1,0 +1,148 @@
+{% extends "panel/base_panel.html" %}
+{% load iurko %}
+{% block titulo_panel %}Reportes{% endblock %}{% block titulo_top %}Reportes{% endblock %}
+{% block contenido %}
+<div class="ad-head"><div><h1>Reportes</h1><p>Del {{ desde|date:"d/m/Y" }} al {{ hasta|date:"d/m/Y" }}. Las ventas se cuentan por fecha de pago (sin pedidos cancelados) y la producción por fecha de producción.</p></div>
+  <div class="ad-head-acc"><a class="ik-btn ik-btn-primary" href="?{{ consulta }}{% if consulta %}&{% endif %}pdf=completo"><span class="material-symbols-outlined">picture_as_pdf</span>Descargar reporte en PDF</a></div></div>
+
+<form class="ad-rep-filtro no-print" method="get">
+  <div class="ad-rep-presets">{% for k, n in presets %}<a class="ik-pill {% if preset == k %}on{% endif %}" href="?periodo={{ k }}">{{ n }}</a>{% endfor %}</div>
+  <div class="ik-flex ik-wrap">
+    <label class="ik-caption" for="r-desde">Desde</label><input class="ik-input" type="date" id="r-desde" name="desde" value="{{ desde|date:'Y-m-d' }}" style="width:auto">
+    <label class="ik-caption" for="r-hasta">hasta</label><input class="ik-input" type="date" id="r-hasta" name="hasta" value="{{ hasta|date:'Y-m-d' }}" style="width:auto">
+    <button class="ik-btn ik-btn-primary ik-btn-sm">Ver</button>
+  </div>
+</form>
+
+<div class="ad-kpis">
+  <div class="ad-kpi"><small><span class="material-symbols-outlined">payments</span>Ventas</small><b>{{ tot.ventas|pesos }}</b><span>{% if tot.fuera_piezas %}{{ tot.pedidos }} pedido{{ tot.pedidos|pluralize }} web · {{ tot.fuera_ventas|pesos }} por fuera{% else %}{{ tot.pedidos }} pedido{{ tot.pedidos|pluralize }} · ticket promedio {{ tot.ticket|pesos }}{% endif %}</span></div>
+  <div class="ad-kpi"><small><span class="material-symbols-outlined">trending_up</span>Ganancia estimada</small><b>{{ tot.ganancia|pesos }}</b><span>{% if tot.margen is not None %}{{ tot.margen }} % sobre lo vendido{% else %}sin ventas{% endif %}</span></div>
+  <div class="ad-kpi"><small><span class="material-symbols-outlined">scale</span>Kilos vendidos</small><b>{{ tot.kg_vend|num:1 }} kg</b><span>{{ tot.piezas_vend }} pieza{{ tot.piezas_vend|pluralize }} · {{ tot.clientes }} cliente{{ tot.clientes|pluralize }}</span></div>
+  <div class="ad-kpi"><small><span class="material-symbols-outlined">factory</span>Kilos producidos</small><b>{{ tot.kg_prod|num:1 }} kg</b><span>costo de insumos {{ tot.costo_prod|pesos }}</span></div>
+  <div class="ad-kpi"><small><span class="material-symbols-outlined">delete_sweep</span>Mermas</small><b>{{ tot.kg_baja|num:1 }} kg</b><span>piezas dadas de baja</span></div>
+</div>
+{% if tot.fuera_piezas %}<p class="ik-caption" style="margin:-.5rem 0 1rem">Incluye {{ tot.fuera_piezas }} pieza{{ tot.fuera_piezas|pluralize }} vendida{{ tot.fuera_piezas|pluralize }} por fuera de la web (WhatsApp, en el local, ferias) por {{ tot.fuera_ventas|pesos }}, registrada{{ tot.fuera_piezas|pluralize }} a mano en cada tanda.</p>{% endif %}
+{% if tot.sin_costo %}<p class="ik-caption" style="margin:-.5rem 0 1.25rem">* Algunas piezas vendidas son de tandas cargadas sin descontar materias primas: su costo no se conoce y la ganancia de esas recetas está sobreestimada.</p>{% endif %}
+
+{% if meses|length > 1 %}
+<div class="ad-rep-graficos">
+  <section class="ad-panel ad-graf" aria-label="Ventas por mes">
+    <div class="ad-panel-h"><h3>Ventas por mes</h3></div>
+    <div class="ad-panel-b">
+      <div class="ad-graf-barras" role="img" aria-label="Ventas por mes en pesos">
+        {% for m in meses %}
+        <div class="ad-graf-col" tabindex="0" data-tip="{{ m.etiqueta }}: {{ m.ventas|pesos }} · {{ m.pedidos }} pedido{{ m.pedidos|pluralize }}">
+          <div class="ad-graf-zona"><span class="b vend" style="height:{{ m.h_ventas }}%"></span></div>
+          <small>{{ m.etiqueta }}</small>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  <section class="ad-panel ad-graf" aria-label="Kilos por mes">
+    <div class="ad-panel-h"><h3>Kilos por mes</h3>
+      <div class="ad-graf-leyenda"><span><i class="prod"></i>Producidos</span><span><i class="vend"></i>Vendidos</span></div></div>
+    <div class="ad-panel-b">
+      <div class="ad-graf-barras" role="img" aria-label="Kilos producidos y vendidos por mes">
+        {% for m in meses %}
+        <div class="ad-graf-col" tabindex="0" data-tip="{{ m.etiqueta }}: {{ m.kg_prod|num:1 }} kg producidos · {{ m.kg_vend|num:1 }} kg vendidos">
+          <div class="ad-graf-zona doble"><span class="b prod" style="height:{{ m.h_prod }}%"></span><span class="b vend" style="height:{{ m.h_vend }}%"></span></div>
+          <small>{{ m.etiqueta }}</small>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+</div>
+{% endif %}
+
+<div class="ad-panel">
+  <div class="ad-panel-h"><h3>Por receta</h3><a class="ik-btn ik-btn-ghost ik-btn-sm" href="?{{ consulta }}{% if consulta %}&{% endif %}pdf=recetas" title="Descargar solo esta tabla en PDF"><span class="material-symbols-outlined">picture_as_pdf</span>PDF</a></div>
+  {% if recetas %}
+  <div class="ik-table-wrap"><table class="ik-table ad-rep-tabla">
+    <thead><tr><th>Receta</th><th class="num">Producido</th><th class="num">Vendido</th><th style="min-width:180px">Ventas</th><th class="num">Costo de lo vendido</th><th class="num">Ganancia</th><th class="num">Margen</th><th class="num">Mermas</th></tr></thead>
+    <tbody>{% for f in recetas %}
+      <tr><td><b>{{ f.receta.nombre }}</b></td>
+        <td class="num">{{ f.kg_prod|num:1 }} kg<div class="ik-caption">{{ f.piezas_prod }} pzas</div></td>
+        <td class="num">{{ f.kg_vend|num:1 }} kg<div class="ik-caption">{{ f.piezas_vend }} pzas</div></td>
+        <td><div class="ad-rep-barra"><span style="width:{{ f.pct }}%"></span></div><b>{{ f.ventas|pesos }}</b></td>
+        <td class="num">{{ f.costo_vend|pesos }}{% if f.sin_costo %} *{% endif %}</td>
+        <td class="num"><b>{{ f.ganancia|pesos }}</b></td>
+        <td class="num">{% if f.margen is not None %}{{ f.margen }} %{% else %}—{% endif %}</td>
+        <td class="num">{% if f.kg_baja %}{{ f.kg_baja|num:1 }} kg{% else %}—{% endif %}</td></tr>
+    {% endfor %}</tbody>
+    <tfoot><tr><th>Total</th><th class="num">{{ tot.kg_prod|num:1 }} kg</th><th class="num">{{ tot.kg_vend|num:1 }} kg</th><th>{{ tot.ventas|pesos }}</th><th class="num">{{ tot.costo_vend|pesos }}</th><th class="num">{{ tot.ganancia|pesos }}</th><th class="num">{% if tot.margen is not None %}{{ tot.margen }} %{% endif %}</th><th class="num">{{ tot.kg_baja|num:1 }} kg</th></tr></tfoot>
+  </table></div>
+  <div class="ad-panel-f" style="justify-content:flex-start"><p class="ik-caption" style="margin:0">Ganancia estimada = ventas − costo de las materias primas de las piezas vendidas (según el costo por kg de su tanda). No incluye luz, gas, envases ni mano de obra.</p></div>
+  {% else %}
+  <div class="ad-panel-b"><div class="ik-vacio"><span class="material-symbols-outlined">bar_chart</span><h3>No hubo producción ni ventas en este período</h3><p>Probá con otro período arriba.</p></div></div>
+  {% endif %}
+</div>
+
+<div class="ad-cols">
+  <div class="ad-panel">
+    <div class="ad-panel-h"><h3>Mes a mes</h3><a class="ik-btn ik-btn-ghost ik-btn-sm" href="?{{ consulta }}{% if consulta %}&{% endif %}pdf=meses" title="Descargar solo esta tabla en PDF"><span class="material-symbols-outlined">picture_as_pdf</span>PDF</a></div>
+    <div class="ik-table-wrap"><table class="ik-table">
+      <thead><tr><th>Mes</th><th class="num">Pedidos</th><th class="num">Ventas</th><th class="num">Kg vendidos</th><th class="num">Kg producidos</th></tr></thead>
+      <tbody>{% for m in meses %}<tr><td>{{ m.etiqueta|capfirst }}</td><td class="num">{{ m.pedidos }}</td><td class="num">{{ m.ventas|pesos }}</td><td class="num">{{ m.kg_vend|num:1 }}</td><td class="num">{{ m.kg_prod|num:1 }}</td></tr>{% endfor %}</tbody>
+    </table></div>
+  </div>
+  <div class="ad-panel">
+    <div class="ad-panel-h"><h3>Mejores clientes</h3><a class="ik-btn ik-btn-ghost ik-btn-sm" href="?{{ consulta }}{% if consulta %}&{% endif %}pdf=clientes" title="Descargar solo esta tabla en PDF"><span class="material-symbols-outlined">picture_as_pdf</span>PDF</a></div>
+    {% if clientes %}
+    <div class="ik-table-wrap"><table class="ik-table">
+      <thead><tr><th>Cliente</th><th class="num">Pedidos</th><th class="num">Total</th></tr></thead>
+      <tbody>{% for c in clientes %}<tr><td><b>{{ c.nombre }}</b><div class="ik-caption">{{ c.cliente__email }}</div></td><td class="num">{{ c.n }}</td><td class="num">{{ c.plata|pesos }}</td></tr>{% endfor %}</tbody>
+    </table></div>
+    {% else %}<div class="ad-panel-b"><p class="ik-muted" style="margin:0">Sin ventas en el período.</p></div>{% endif %}
+  </div>
+</div>
+
+<div class="ad-panel" id="fuera">
+  <div class="ad-panel-h"><h3>Ventas por fuera de la web</h3><a class="ik-btn ik-btn-ghost ik-btn-sm" href="?{{ consulta }}{% if consulta %}&{% endif %}pdf=fuera" title="Descargar las ventas por fuera de la web en PDF"><span class="material-symbols-outlined">picture_as_pdf</span>PDF</a></div>
+  {% if fuera.piezas %}
+  <div class="ad-panel-b">
+    <div class="ad-kpis ad-fuera-kpis">
+      <div class="ad-kpi"><small><span class="material-symbols-outlined">storefront</span>Total vendido</small><b>{{ fuera.total|pesos }}</b><span>{{ fuera.pct_ventas }} % de las ventas del período</span></div>
+      <div class="ad-kpi"><small><span class="material-symbols-outlined">inventory_2</span>Piezas</small><b>{{ fuera.piezas }}</b><span>registrada{{ fuera.piezas|pluralize }} a mano</span></div>
+      <div class="ad-kpi"><small><span class="material-symbols-outlined">scale</span>Kilos</small><b>{{ fuera.kg|num:1 }} kg</b><span>promedio {{ fuera.promedio_kg|pesos }} por kg</span></div>
+    </div>
+    <div class="ad-cols">
+      {% for titulo, filas in fuera_grupos %}
+      <div>
+        <h4 class="ad-fuera-h">{{ titulo }}</h4>
+        <div class="ik-table-wrap"><table class="ik-table ad-rep-tabla">
+          <thead><tr><th>{% if forloop.first %}Canal{% else %}Receta{% endif %}</th><th class="num">Piezas</th><th class="num">Kilos</th><th style="min-width:140px">Total</th></tr></thead>
+          <tbody>{% for f in filas %}<tr><td><b>{{ f.nombre }}</b></td><td class="num">{{ f.piezas }}</td><td class="num">{{ f.kg|num:1 }}</td>
+            <td><div class="ad-rep-barra"><span style="width:{{ f.pct }}%"></span></div><b>{{ f.total|pesos }}</b> <span class="ik-caption">{{ f.pct }} %</span></td></tr>{% endfor %}</tbody>
+          <tfoot><tr><th>Total</th><th class="num">{{ fuera.piezas }}</th><th class="num">{{ fuera.kg|num:1 }}</th><th>{{ fuera.total|pesos }}</th></tr></tfoot>
+        </table></div>
+      </div>
+      {% endfor %}
+    </div>
+    <details class="ad-fuera-detalle" {% if fuera.detalle|length <= 8 %}open{% endif %}>
+      <summary>Detalle de las {{ fuera.piezas }} pieza{{ fuera.piezas|pluralize }} vendida{{ fuera.piezas|pluralize }}</summary>
+      <div class="ik-table-wrap"><table class="ik-table">
+        <thead><tr><th>Fecha</th><th>Canal</th><th>Cliente</th><th>Receta</th><th>Pieza</th><th class="num">Peso</th><th class="num">Importe</th></tr></thead>
+        <tbody>{% for d in fuera.detalle %}<tr><td>{{ d.fecha|date:"d/m/Y" }}</td><td>{{ d.canal }}</td><td>{{ d.cliente|default:"—" }}</td><td>{{ d.receta }}</td>
+          <td><a href="{% url 'panel:buscar' %}?codigo={{ d.codigo }}" class="ad-fuera-cod">{{ d.codigo|codigo }}</a></td><td class="num">{{ d.peso_g|peso }}</td><td class="num">{{ d.monto|pesos }}</td></tr>{% endfor %}</tbody>
+      </table></div>
+    </details>
+  </div>
+  <div class="ad-panel-f" style="justify-content:flex-start"><p class="ik-caption" style="margin:0">Piezas marcadas en cada tanda como "Vendida por fuera de la web" (WhatsApp, en el local, ferias, por encargo), contadas por la fecha de venta anotada. Ya están sumadas en las ventas, la ganancia y los kilos de arriba.</p></div>
+  {% else %}
+  <div class="ad-panel-b"><p class="ik-muted" style="margin:0">No se registraron ventas por fuera de la web en este período. Se registran desde cada tanda: marcás las piezas y tocás <b>Vendida por fuera de la web</b>.</p></div>
+  {% endif %}
+</div>
+
+<div class="ad-panel">
+  <div class="ad-panel-h"><h3>Materias primas usadas</h3><a class="ik-btn ik-btn-ghost ik-btn-sm" href="?{{ consulta }}{% if consulta %}&{% endif %}pdf=insumos" title="Descargar solo esta tabla en PDF"><span class="material-symbols-outlined">picture_as_pdf</span>PDF</a></div>
+  {% if insumos %}
+  <div class="ik-table-wrap"><table class="ik-table">
+    <thead><tr><th>Materia prima</th><th class="num">Cantidad</th><th class="num">Costo</th></tr></thead>
+    <tbody>{% for i in insumos %}<tr><td><b>{{ i.lote__tipo__nombre }}</b></td><td class="num">{{ i.cant|cant }} {{ i.lote__tipo__unidad__abreviatura }}</td><td class="num">{{ i.costo|pesos }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+  <div class="ad-panel-f" style="justify-content:flex-start"><p class="ik-caption" style="margin:0">Lo que se descontó del depósito al cargar las tandas del período. Sirve para planear las compras.</p></div>
+  {% else %}<div class="ad-panel-b"><p class="ik-muted" style="margin:0">No se usaron materias primas en el período.</p></div>{% endif %}
+</div>
+{% endblock %}

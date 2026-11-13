@@ -1,0 +1,66 @@
+{% extends "panel/base_panel.html" %}
+{% block titulo_panel %}{% if slide.pk %}Editar diapositiva{% else %}Nueva diapositiva{% endif %}{% endblock %}
+{% block titulo_top %}{% if slide.pk %}Editar diapositiva{% else %}Nueva diapositiva{% endif %}{% endblock %}
+{% block contenido %}
+<div class="ad-head"><div><div class="ik-crumbs"><a href="{% url 'panel:carrusel' %}">Carrusel</a> / <b>{{ slide.titulo|default:"Nueva" }}</b></div>
+  <h1>{% if slide.pk %}Editar diapositiva{% else %}Nueva diapositiva{% endif %}</h1><p>Lo que escribas se ve al instante en la vista previa. Los colores y la letra son los de la tienda: no hace falta tocar nada de diseño.</p></div></div>
+
+<div class="ad-prev-wrap">
+  <div class="ad-prev-barra">
+    <span class="ik-label">Vista previa</span>
+    <div class="ik-flex" style="gap:.35rem">
+      <button type="button" class="ik-pill on" data-prev-ancho="">Compu</button>
+      <button type="button" class="ik-pill" data-prev-ancho="390">Celular</button>
+    </div>
+  </div>
+  <div class="ad-prev" data-prev-marco>
+    <section class="ik-hero" data-slide-preview>
+      {% include "tienda/_slide.html" with on=True foto=slide.foto etiqueta=slide.etiqueta icono=slide.icono titulo=slide.titulo|default:"Título de la diapositiva" texto=slide.texto boton=slide.boton_texto enlace="#" %}
+      {% if pagina.mostrar_sello %}<div class="ik-sello"><div><small>Desde {{ pagina.anio_fundacion|stringformat:"d" }}</small><b>IURKO</b>{% if pagina.sello_linea %}<small>{{ pagina.sello_linea }}</small>{% endif %}</div></div>{% endif %}
+    </section>
+  </div>
+</div>
+
+<form method="post" enctype="multipart/form-data" class="ik-form ik-mt" data-slide-form novalidate>
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="ik-msgs">{% for e in form.non_field_errors %}<div class="ik-msg error">{{ e }}</div>{% endfor %}</div>{% endif %}
+  <div class="ad-cols">
+    <div class="ad-panel">
+      <div class="ad-panel-h"><h3>1. Producto y textos</h3></div>
+      <div class="ad-panel-b">
+        <div class="ik-field"><label for="{{ form.receta.id_for_label }}">{{ form.receta.label }}</label>
+          <div class="ik-flex">{{ form.receta }}<button type="button" class="ik-btn ik-btn-ghost ik-btn-sm" data-slide-completar title="Pone el nombre, la descripción y la foto del producto">Completar</button></div>
+          <span class="ik-hint">Elegí un producto y tocá “Completar” para traer su nombre, descripción y foto. El botón lleva a ese producto.</span></div>
+        {% for campo in form %}{% if campo.name == 'etiqueta' or campo.name == 'icono' or campo.name == 'titulo' or campo.name == 'texto' %}
+        <div class="ik-field {% if campo.errors %}has-error{% endif %}">
+          <div class="ik-field-head"><label for="{{ campo.id_for_label }}">{{ campo.label }}</label>{% if campo.name == 'titulo' or campo.name == 'texto' or campo.name == 'etiqueta' %}<span class="ik-hint" data-contador="{{ campo.name }}"></span>{% endif %}</div>
+          {{ campo }}{% if campo.errors %}<span class="ik-error">{{ campo.errors|join:" " }}</span>{% elif campo.help_text %}<span class="ik-hint">{{ campo.help_text }}</span>{% endif %}</div>
+        {% endif %}{% endfor %}
+      </div>
+    </div>
+    <div>
+      <div class="ad-panel">
+        <div class="ad-panel-h"><h3>2. Foto de fondo</h3></div>
+        <div class="ad-panel-b">
+          <label class="ik-file"><span class="material-symbols-outlined">add_photo_alternate</span><b>{% if slide.imagen %}Cambiar foto{% else %}Subir foto{% endif %}</b><span class="ik-caption">Horizontal, idealmente 1600 × 600 o más grande · máx. 5 MB</span>{{ form.imagen }}</label>
+          {% if form.imagen.errors %}<span class="ik-error">{{ form.imagen.errors|join:" " }}</span>{% endif %}
+          {% if slide.imagen %}<label class="ik-check ik-mt"><input type="checkbox" name="quitar_imagen" value="1" data-slide-quitar-foto> Quitar la foto propia (usa la del producto o el fondo bordó)</label>{% endif %}
+          <p class="ik-caption ik-mt" style="margin-bottom:0">Si no subís foto, se usa la del producto elegido; si tampoco tiene, queda el fondo bordó.</p>
+        </div>
+      </div>
+      <div class="ad-panel">
+        <div class="ad-panel-h"><h3>3. Botón</h3></div>
+        <div class="ad-panel-b">
+          {% for campo in form %}{% if campo.name == 'boton_texto' or campo.name == 'boton_url' %}
+          <div class="ik-field {% if campo.errors %}has-error{% endif %}"><label for="{{ campo.id_for_label }}">{{ campo.label }}</label>{{ campo }}{% if campo.errors %}<span class="ik-error">{{ campo.errors|join:" " }}</span>{% elif campo.help_text %}<span class="ik-hint">{{ campo.help_text }}</span>{% endif %}</div>
+          {% endif %}{% endfor %}
+          <span class="ik-hint">Dejá vacío el texto del botón para no mostrarlo.</span>
+          <label class="ik-check ik-mt">{{ form.activo }} Visible en la tienda</label>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="ik-flex" style="justify-content:flex-end"><a class="ik-btn ik-btn-ghost" href="{% url 'panel:carrusel' %}">Cancelar</a><button class="ik-btn ik-btn-primary"><span class="material-symbols-outlined">save</span>Guardar diapositiva</button></div>
+</form>
+{{ recetas_json|json_script:"recetas-slide-json" }}
+{% endblock %}

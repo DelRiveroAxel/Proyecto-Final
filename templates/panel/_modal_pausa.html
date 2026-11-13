@@ -1,0 +1,12 @@
+<div class="ik-modal" id="pausa-{{ tanda.pk }}" hidden>
+  <form class="ik-modal-box ik-form" method="post" action="{% url 'panel:tanda_pausar' tanda.pk %}">
+    {% csrf_token %}<input type="hidden" name="volver" value="{{ volver }}">
+    <div class="ik-modal-h"><h3>Pausar tanda {{ tanda.codigo }}</h3><button type="button" class="ik-btn ik-btn-icon" data-modal-cerrar aria-label="Cerrar"><span class="material-symbols-outlined">close</span></button></div>
+    <div class="ik-modal-b">
+      <p class="ik-muted">Ninguna pieza de <b>{{ tanda.receta.nombre }}</b> de esta tanda se va a vender hasta que la reanudes. Si alguien está pagando con QR una pieza de esta tanda, ese pago se cancela.</p>
+      <div class="ik-field"><label for="motivo-{{ tanda.pk }}">Motivo</label>
+        <textarea class="ik-textarea" id="motivo-{{ tanda.pk }}" name="motivo" rows="3" required placeholder="Ej.: control de calidad, temperatura de cámara…"></textarea></div>
+    </div>
+    <div class="ik-modal-f"><button type="button" class="ik-btn ik-btn-ghost" data-modal-cerrar>Cancelar</button><button class="ik-btn ik-btn-primary"><span class="material-symbols-outlined">pause</span>Pausar tanda</button></div>
+  </form>
+</div>

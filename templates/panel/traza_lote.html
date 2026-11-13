@@ -1,0 +1,74 @@
+{% extends "panel/base_panel.html" %}
+{% load iurko %}
+{% block titulo_panel %}Trazabilidad · {{ lote.tipo.nombre }}{% endblock %}{% block titulo_top %}Trazabilidad{% endblock %}
+{% block contenido %}
+<div class="ad-head">
+  <div><div class="ik-crumbs"><a href="{% url 'panel:traza' %}">Trazabilidad</a> / <b>Lote de materia prima</b></div>
+    <h1>{{ lote.tipo.nombre }}</h1>
+    <p>{{ lote.compra.proveedor }} · comprado el {{ lote.compra.fecha|date:"d/m/Y" }}{% if lote.lote %} · lote del proveedor <b>{{ lote.lote }}</b>{% endif %}{% if lote.vencimiento %} · vence {{ lote.vencimiento|date:"d/m/Y" }}{% endif %}</p></div>
+  <div class="ad-head-acc no-print">
+    <a class="ik-btn ik-btn-ghost" href="{% url 'panel:compra' lote.compra_id %}"><span class="material-symbols-outlined">receipt_long</span>Ver la compra</a>
+    <a class="ik-btn ik-btn-primary" href="?pdf=1"><span class="material-symbols-outlined">picture_as_pdf</span>Descargar PDF</a>
+  </div>
+</div>
+
+<ol class="ad-traza-camino">
+  <li><span class="material-symbols-outlined">local_shipping</span><b>{{ lote.cantidad|cant }} {{ lote.tipo.unidad }}</b><span>comprados a {{ lote.compra.proveedor }}</span></li>
+  <li><span class="material-symbols-outlined">factory</span><b>{{ tandas|length }} tanda{{ tandas|length|pluralize }}</b><span>lo usaron</span></li>
+  <li><span class="material-symbols-outlined">group</span><b>{{ personas|length }} cliente{{ personas|length|pluralize }}</b><span>recibieron piezas{% if fuera %} · y {{ fuera|length }} pieza{{ fuera|length|pluralize }} por fuera de la web{% endif %}</span></li>
+</ol>
+
+{% if activas or pausadas %}
+<div class="ad-frenar {% if not activas %}listo{% endif %}">
+  <span class="material-symbols-outlined">{% if activas %}front_hand{% else %}pause_circle{% endif %}</span>
+  <div class="ad-frenar-txt">
+    {% if activas %}
+      <b>¿Hay un problema con este lote?</b>
+      <span>Frená la venta de las <b>{{ activas|length }} tanda{{ activas|length|pluralize }} activa{{ activas|length|pluralize }}</b> que lo usaron con un solo botón. Los pagos con QR en curso de esas piezas se cancelan. Después avisá a los clientes de la lista de abajo.</span>
+    {% else %}
+      <b>Las tandas de este lote están pausadas</b>
+      <span>No se vende ninguna pieza hecha con él. Si fue una falsa alarma, volvelas a poner a la venta.</span>
+    {% endif %}
+  </div>
+  <div class="ad-frenar-acc no-print">
+    {% if activas %}<button class="ik-btn ik-btn-primary" type="button" data-modal-abrir="pausar-lote"><span class="material-symbols-outlined">pause</span>Pausar {{ activas|length }} tanda{{ activas|length|pluralize }}</button>{% endif %}
+    {% if pausadas %}<form method="post" action="{% url 'panel:traza_lote_pausar' lote.pk %}">{% csrf_token %}<input type="hidden" name="accion" value="reanudar">
+      <button class="ik-btn ik-btn-ghost" onclick="return confirm('¿Volver a poner a la venta las {{ pausadas|length }} tanda{{ pausadas|length|pluralize }} pausada{{ pausadas|length|pluralize }} de este lote?')"><span class="material-symbols-outlined">play_arrow</span>Reanudar {{ pausadas|length }} pausada{{ pausadas|length|pluralize }}</button></form>{% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% if activas %}
+<div class="ik-modal" id="pausar-lote" hidden>
+  <form class="ik-modal-box" method="post" action="{% url 'panel:traza_lote_pausar' lote.pk %}">{% csrf_token %}
+    <div class="ik-modal-h"><h3>Pausar todo lo hecho con este lote</h3><button type="button" class="ik-btn ik-btn-icon" data-modal-cerrar aria-label="Cerrar"><span class="material-symbols-outlined">close</span></button></div>
+    <div class="ik-modal-b">
+      <p class="ik-muted">Se pausan estas tandas y dejan de venderse en la tienda:</p>
+      <ul class="ad-frenar-lista">{% for t in activas %}<li><b>{{ t.receta.nombre }}</b> · {{ t.codigo }} · {{ t.resumen.libres }} libres</li>{% endfor %}</ul>
+      <div class="ik-field"><label for="motivo-lote">Motivo (lo ves en cada tanda)</label>
+        <textarea class="ik-textarea" id="motivo-lote" name="motivo" required>Problema con {{ lote.tipo.nombre|lower }} de {{ lote.compra.proveedor }}{% if lote.lote %} (lote {{ lote.lote }}){% endif %}, compra del {{ lote.compra.fecha|date:"d/m/Y" }}.</textarea></div>
+    </div>
+    <div class="ik-modal-f"><button type="button" class="ik-btn ik-btn-ghost" data-modal-cerrar>Cancelar</button><button class="ik-btn ik-btn-primary"><span class="material-symbols-outlined">pause</span>Pausar {{ activas|length }} tanda{{ activas|length|pluralize }}</button></div>
+  </form>
+</div>
+{% endif %}
+
+<div class="ad-panel">
+  <div class="ad-panel-h"><h3>Tandas que usaron este lote</h3></div>
+  {% if tandas %}
+  <div class="ik-table-wrap"><table class="ik-table">
+    <thead><tr><th>Tanda</th><th>Receta</th><th>Producción</th><th class="num">Usado</th><th class="num">Vendidas</th><th class="num">Libres</th><th>Estado</th><th class="acc no-print"></th></tr></thead>
+    <tbody>{% for t in tandas %}{% with est=t.etiqueta_estado %}
+      <tr><td><a href="{% url 'panel:traza_tanda' t.pk %}">{{ t.codigo|codigo }}</a></td><td><b>{{ t.receta.nombre }}</b></td><td>{{ t.fecha_produccion|date:"d/m/Y" }}</td>
+        <td class="num">{{ t.usado|cant }} {{ lote.tipo.unidad }}</td><td class="num">{{ t.resumen.vendidas }}</td><td class="num">{{ t.resumen.libres }}</td>
+        <td><span class="ik-est {{ est.1 }}">{{ est.0 }}</span></td>
+        <td class="acc no-print"><a class="ik-btn ik-btn-ghost ik-btn-sm" href="{% url 'panel:tanda' t.pk %}">{% if t.estado == 'ACTIVA' %}Pausar / ver{% else %}Ver tanda{% endif %}</a></td></tr>
+    {% endwith %}{% endfor %}</tbody>
+  </table></div>
+  {% else %}
+  <div class="ad-panel-b"><p class="ik-muted" style="margin:0">Este lote todavía no se usó en ninguna tanda{% if lote.cantidad_disponible %}: quedan {{ lote.cantidad_disponible|cant }} {{ lote.tipo.unidad }} en depósito{% endif %}.</p></div>
+  {% endif %}
+</div>
+
+{% include "panel/_traza_clientes.html" with desde_lote=True %}
+{% endblock %}

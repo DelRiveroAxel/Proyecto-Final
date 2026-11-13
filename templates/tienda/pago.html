@@ -1,0 +1,45 @@
+{% extends "tienda/base_tienda.html" %}
+{% load iurko %}
+{% block titulo %}Pagar pedido #{{ pedido.numero }} · Iurko Chacinados{% endblock %}
+{% block contenido %}
+<div class="ik-pago" id="pago" data-estado-url="{% url 'tienda:pago_estado' pedido.pk %}" data-estado="{{ pedido.estado }}" data-segundos="{{ pedido.segundos_qr }}">
+  <span class="ik-eyebrow">Pedido #{{ pedido.numero }}</span>
+
+  {% if qr %}
+    <div class="ik-pago-monto">{{ pedido.total|pesos }}</div>
+    <div class="ik-qr">{{ qr }}</div>
+    <ol class="ik-pago-pasos">
+      <li>Abrí la app de Mercado Pago (o la de tu banco)</li>
+      <li>Tocá <b>“Pagar con QR”</b> y escaneá este código</li>
+      <li>Esta pantalla se actualiza sola cuando se acredita</li>
+    </ol>
+    <span class="ik-pago-estado"><span class="ik-spinner"></span><span data-estado-texto>Esperando el pago…</span></span>
+    <div class="ik-timer">Tus piezas quedan reservadas · el QR vence en <span data-timer>--:--</span></div>
+    {% if modo_demo %}
+      <form method="post" action="{% url 'tienda:simular_pago' pedido.pk %}" class="ik-mt">{% csrf_token %}
+        <button class="ik-btn ik-btn-accent"><span class="material-symbols-outlined">science</span>Simular pago aprobado (modo demo)</button></form>
+      <p class="ik-caption">Modo demo: no hay token de Mercado Pago cargado, este QR no cobra.</p>
+    {% endif %}
+    <form method="post" action="{% url 'tienda:cancelar_pago' pedido.pk %}" class="ik-mt">{% csrf_token %}<button class="ik-btn ik-btn-link">Cancelar y volver al carrito</button></form>
+
+  {% elif pedido.estado == 'PAGADO' or pedido.estado == 'PREPARANDO' or pedido.estado == 'LISTO' or pedido.estado == 'ENTREGADO' %}
+    <div class="ik-pago-ok ik-mt"><span class="material-symbols-outlined">check_circle</span></div>
+    <h2>¡Pago acreditado!</h2>
+    <p class="ik-muted">Pagaste {{ pedido.total|pesos }}. El productor ya tiene tu pedido.</p>
+    <a class="ik-btn ik-btn-primary" href="{% url 'tienda:pedido' pedido.pk %}">Ver mi pedido</a>
+
+  {% else %}
+    <div class="ik-mt"><span class="material-symbols-outlined" style="font-size:3.5rem;color:var(--err-fg)">timer_off</span></div>
+    <h2>{% if pedido.estado == 'VENCIDO' %}El QR venció{% else %}Pago cancelado{% endif %}</h2>
+    <p class="ik-muted">{{ pedido.motivo_cancelacion|default:"Las piezas volvieron al stock. Tus productos siguen en el carrito." }}</p>
+    {% if pedido.reintegro_pendiente %}<div class="ik-msg warning">Recibimos tu pago pero no quedó stock. Te vamos a devolver el dinero.</div>{% endif %}
+    <a class="ik-btn ik-btn-primary" href="{% url 'tienda:carrito' %}">Volver al carrito y generar otro QR</a>
+  {% endif %}
+
+  {% if pedido.items.all %}
+  <ul class="ik-pedido-items ik-mt" style="text-align:left;border-top:1px solid var(--line);padding-top:1rem">
+    {% for it in pedido.items.all %}<li><span>{{ it.cantidad }} × {{ it.nombre }} <span class="ik-caption">({{ it.peso_g|kg }})</span></span><b>{{ it.subtotal|pesos }}</b></li>{% endfor %}
+  </ul>
+  {% endif %}
+</div>
+{% endblock %}

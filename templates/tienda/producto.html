@@ -1,0 +1,79 @@
+{% extends "tienda/base_tienda.html" %}
+{% load iurko %}
+{% block titulo %}{{ receta.nombre }} · Iurko Chacinados{% endblock %}
+{% block contenido %}
+<div class="ik-crumbs"><a href="{% url 'tienda:catalogo' %}">Catálogo</a> / <b>{{ receta.nombre }}</b></div>
+<div class="ik-detalle ik-mt">
+  <div data-galeria>
+    <div class="ik-galeria">
+      {% if galeria %}
+        <img src="{{ galeria.0.url }}" alt="{{ receta.nombre }}" data-galeria-principal title="Tocá para ampliar">
+        <button type="button" class="ik-gal-zoom" data-gal-abrir aria-label="Ampliar foto"><span class="material-symbols-outlined">zoom_in</span></button>
+        {% if galeria|length > 1 %}
+          <button type="button" class="ik-gal-flecha prev" data-gal-prev aria-label="Foto anterior"><span class="material-symbols-outlined">chevron_left</span></button>
+          <button type="button" class="ik-gal-flecha next" data-gal-next aria-label="Foto siguiente"><span class="material-symbols-outlined">chevron_right</span></button>
+          <span class="ik-gal-cont" data-gal-cont>1 / {{ galeria|length }}</span>
+        {% endif %}
+      {% else %}<span class="ik-ph">{{ receta.nombre|slice:":1" }}</span>{% endif %}
+    </div>
+    {% if galeria|length > 1 %}<div class="ik-thumbs">{% for img in galeria %}<button type="button" class="{% if forloop.first %}on{% endif %}" data-galeria-foto="{{ img.url }}" aria-label="Ver foto {{ forloop.counter }}"><img src="{{ img.url }}" alt="" loading="lazy"></button>{% endfor %}</div>
+    {% elif galeria %}<span hidden data-galeria-foto="{{ galeria.0.url }}"></span>{% endif %}
+  </div>
+
+  <div class="ik-lightbox" id="ik-lightbox" hidden role="dialog" aria-modal="true" aria-label="Fotos de {{ receta.nombre }}">
+    <div class="ik-lb-barra">
+      <span class="ik-lb-cont" data-lb-cont></span>
+      <div class="ik-flex" style="gap:.35rem">
+        <button type="button" data-lb-menos aria-label="Alejar"><span class="material-symbols-outlined">zoom_out</span></button>
+        <button type="button" data-lb-mas aria-label="Acercar"><span class="material-symbols-outlined">zoom_in</span></button>
+        <button type="button" data-lb-cerrar aria-label="Cerrar"><span class="material-symbols-outlined">close</span></button>
+      </div>
+    </div>
+    <div class="ik-lb-escena" data-lb-escena><img alt="{{ receta.nombre }}" data-lb-img draggable="false"></div>
+    <button type="button" class="ik-lb-flecha prev" data-lb-prev aria-label="Foto anterior"><span class="material-symbols-outlined">chevron_left</span></button>
+    <button type="button" class="ik-lb-flecha next" data-lb-next aria-label="Foto siguiente"><span class="material-symbols-outlined">chevron_right</span></button>
+    <p class="ik-lb-ayuda">Tocá la foto o usá la rueda del mouse para hacer zoom · arrastrá para moverla · ← → para cambiar</p>
+  </div>
+  <div>
+    <span class="ik-eyebrow">{{ receta.subtitulo|default:receta.get_categoria_display }}</span>
+    <h1>{{ receta.nombre }}</h1>
+    {% if receta.etiqueta %}<span class="ik-chip">{{ receta.etiqueta }}</span>{% endif %}
+    {% if receta.descripcion %}<p class="ik-lead ik-mt">{{ receta.descripcion|linebreaksbr }}</p>{% endif %}
+
+    <div class="ik-compra ik-mt">
+      <div class="ik-between"><div><small class="ik-caption">Precio por kg</small><div class="ik-price">{{ receta.precio_kg|pesos }}</div></div>
+        <div class="ik-right">
+          {% if receta.stock > 5 %}<span class="ik-est ik-est-ok">{{ receta.stock }} piezas disponibles</span>
+          {% elif receta.stock %}<span class="ik-est ik-est-warn">¡Últimas {{ receta.stock }}!</span>
+          {% elif receta.proxima %}<span class="ik-est ik-est-info">Disponible desde el {{ receta.proxima.fecha_disponible|date:"d/m" }}</span>
+          {% else %}<span class="ik-est ik-est-err">Sin stock</span>{% endif %}
+        </div></div>
+      <ul class="ik-specs">
+        <li><span>Presentación</span><span>{{ receta.presentacion|default:"Pieza entera" }}</span></li>
+        <li><span>Peso aproximado por pieza</span><span>{{ receta.peso_nominal_g|kg }}</span></li>
+        <li><span>Precio aproximado por pieza</span><span>{{ receta.precio_pieza_estimado|pesos }}</span></li>
+        {% if receta.dias_estacionamiento %}<li><span>Estacionamiento</span><span>{{ receta.dias_estacionamiento }} días</span></li>{% endif %}
+        {% if receta.vence %}<li><span>Consumir antes de</span><span>{{ receta.vence|date:"d/m/Y" }}</span></li>{% endif %}
+      </ul>
+      {% if not user.is_authenticated %}
+        <a class="ik-btn ik-btn-primary ik-btn-block" href="{% url 'login' %}?next={{ request.path|urlencode }}"><span class="material-symbols-outlined">login</span>{% if receta.stock %}Ingresá para comprar{% else %}Ingresá para que te avisemos cuando haya{% endif %}</a>
+        <p class="ik-caption ik-mt">¿No tenés cuenta? <a href="{% url 'registro' %}?next={{ request.path|urlencode }}">Registrate en un minuto</a>.</p>
+      {% elif receta.stock %}
+        <form method="post" action="{% url 'tienda:carrito_agregar' %}" class="ik-flex ik-wrap" data-qty-form>
+          {% csrf_token %}<input type="hidden" name="receta" value="{{ receta.pk }}">
+          <div class="ik-qty"><button type="button" data-qty="-1" aria-label="Menos">−</button><input name="cantidad" value="1" inputmode="numeric" min="1" max="{{ receta.stock }}" aria-label="Cantidad de piezas"><button type="button" data-qty="1" aria-label="Más">+</button></div>
+          <button class="ik-btn ik-btn-primary" style="flex:1"><span class="material-symbols-outlined">add_shopping_cart</span>Agregar al carrito</button>
+        </form>
+        <p class="ik-caption ik-mt">Te asignamos las piezas que se hicieron primero. Al pagar ves el peso exacto de cada una.</p>
+      {% elif esperando_aviso %}
+        <div class="ik-msg success">Te vamos a avisar por correo cuando vuelva a haber.</div>
+        <form method="post" action="{% url 'tienda:avisame_quitar' receta.pk %}" class="ik-mt">{% csrf_token %}<input type="hidden" name="volver" value="{{ request.path }}"><button class="ik-btn ik-btn-link">Ya no quiero el aviso</button></form>
+      {% else %}
+        <form method="post" action="{% url 'tienda:avisame' receta.pk %}">{% csrf_token %}
+          <button class="ik-btn ik-btn-accent ik-btn-block"><span class="material-symbols-outlined">notifications</span>Avisame cuando haya</button></form>
+        <p class="ik-caption ik-mt">No pagás nada ahora. Te escribimos cuando salga la próxima tanda, con el precio de ese momento.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

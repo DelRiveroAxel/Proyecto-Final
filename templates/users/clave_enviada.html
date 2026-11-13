@@ -1,0 +1,11 @@
+{% extends "users/base_auth.html" %}
+{% block titulo %}Revisá tu correo · Iurko Chacinados{% endblock %}
+{% block tarjeta %}
+<div class="ik-auth-brand">
+  <div class="ik-auth-sello"><span class="ik-avatar"><span class="material-symbols-outlined" style="font-size:2.4rem;color:var(--ok-fg)">mark_email_read</span></span></div>
+  <h2>Revisá tu correo</h2>
+  <p>Si hay una cuenta con ese correo, te llegó un enlace para crear una contraseña nueva. Vale por 3 horas.</p>
+</div>
+<div class="ik-msg">¿No lo ves? Fijate en “Spam” o “Promociones”. Si te registraste con otro correo, probá con ese.</div>
+<p class="ik-auth-alt ik-mt"><a href="{% url 'login' %}">Volver a iniciar sesión</a></p>
+{% endblock %}

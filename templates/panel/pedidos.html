@@ -1,0 +1,29 @@
+{% extends "panel/base_panel.html" %}
+{% load iurko %}
+{% block titulo_panel %}Pedidos{% endblock %}{% block titulo_top %}Pedidos{% endblock %}
+{% block contenido %}
+<div class="ad-head"><div><h1>Pedidos</h1><p>Los pedidos aparecen acá cuando Mercado Pago confirma el pago.</p></div>
+  {% if alertas.pedidos_nuevos %}<div class="ad-head-acc"><form method="post" action="{% url 'panel:pedidos_vistos' %}">{% csrf_token %}<button class="ik-btn ik-btn-ghost ik-btn-sm"><span class="material-symbols-outlined">done_all</span>Marcar todo como visto</button></form></div>{% endif %}</div>
+<div class="ad-tabs">
+  <a href="?estado=activos" class="{% if estado == 'activos' %}on{% endif %}">Por preparar / entregar</a>
+  {% for k, v in estados %}{% if k != 'VENCIDO' %}<a href="?estado={{ k }}" class="{% if estado == k %}on{% endif %}">{{ v }}</a>{% endif %}{% endfor %}
+  <a href="?estado=reintegros" class="{% if estado == 'reintegros' %}on{% endif %}">Reintegros</a>
+  <a href="?estado=todos" class="{% if estado == 'todos' %}on{% endif %}">Todos</a>
+</div>
+<div class="ad-panel">
+  {% if pedidos %}
+  <div class="ik-table-wrap"><table class="ik-table">
+    <thead><tr><th>Pedido</th><th>Cliente</th><th>Productos</th><th>Pagado</th><th class="num">Total</th><th>Estado</th><th class="acc"></th></tr></thead>
+    <tbody>{% for p in pedidos %}
+      <tr class="{% if p.novedad %}is-nuevo{% endif %}"><td><a href="{% url 'panel:pedido' p.pk %}"><b>#{{ p.numero }}</b></a>{% if p.novedad %} <span class="ik-est ik-est-nuevo">Nuevo</span>{% endif %}</td>
+        <td>{{ p.cliente.nombre_visible }}{% if p.cliente.cliente.telefono %}{% whatsapp p.cliente.cliente.telefono "Hola "|add:p.cliente.first_name|add:", te escribimos de Iurko Chacinados por tu pedido #"|add:p.numero|add:"." as wa %}<div>{% if wa %}<a class="ad-wa" href="{{ wa }}" target="_blank" rel="noopener" title="Abrir el chat de WhatsApp con {{ p.cliente.nombre_visible }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.6.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3a.5.5 0 0 0 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c1.7.7 2.3.8 3.2.7a2.7 2.7 0 0 0 1.8-1.3 2.2 2.2 0 0 0 .2-1.3c-.1-.1-.3-.2-.5-.3Z"/></svg>{{ p.cliente.cliente.telefono }}</a>{% else %}<span class="ik-caption" title="El número no parece válido para WhatsApp">{{ p.cliente.cliente.telefono }}</span>{% endif %}</div>{% endif %}</td>
+        <td class="ik-small">{% for it in p.items.all %}{{ it.cantidad }} × {{ it.nombre }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</td>
+        <td>{{ p.pagado_en|date:"d/m H:i"|default:"—" }}</td><td class="num">{{ p.total|pesos }}</td>
+        <td><span class="ik-est {{ p.clase_estado }}">{{ p.get_estado_display }}</span>{% if p.reintegro_pendiente %} <span class="ik-est ik-est-err">Reintegrar</span>{% endif %}
+          {% if p.entregado_en %}<div class="ik-caption" style="margin-top:.25rem">el {{ p.entregado_en|date:"d/m/Y" }} a las {{ p.entregado_en|date:"H:i" }}</div>{% endif %}</td>
+        <td class="acc">{% if p.pagado_en %}<a class="ik-btn ik-btn-icon" href="{% url 'panel:pedido_comprobante' p.pk %}" target="_blank" title="Comprobante de pago" aria-label="Comprobante de pago del pedido {{ p.numero }}"><span class="material-symbols-outlined">receipt_long</span></a>{% endif %}{% with sig=p.siguiente_estado %}{% if sig %}<form method="post" action="{% url 'panel:pedido_avanzar' p.pk %}" style="display:inline">{% csrf_token %}<input type="hidden" name="volver" value="{{ request.get_full_path }}"><button class="ik-btn ik-btn-primary ik-btn-sm">Marcar {{ sig.1|lower }}</button></form>{% endif %}{% endwith %}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="ad-panel-b ik-muted">No hay pedidos en esta pestaña.</div>{% endif %}
+</div>
+{% endblock %}

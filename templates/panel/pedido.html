@@ -1,0 +1,53 @@
+{% extends "panel/base_panel.html" %}
+{% load iurko %}
+{% block titulo_panel %}Pedido #{{ pedido.numero }}{% endblock %}{% block titulo_top %}Pedido #{{ pedido.numero }}{% endblock %}
+{% block contenido %}
+<div class="ad-head"><div><div class="ik-crumbs"><a href="{% url 'panel:pedidos' %}">Pedidos</a> / <b>#{{ pedido.numero }}</b></div>
+  <h1>Pedido #{{ pedido.numero }}</h1><p>{{ pedido.cliente.nombre_visible }} · {{ pedido.cliente.email }}{% if pedido.cliente.cliente.telefono %} · {% whatsapp pedido.cliente.cliente.telefono "Hola "|add:pedido.cliente.first_name|add:", te escribimos de Iurko Chacinados por tu pedido #"|add:pedido.numero|add:"." as wa %}{% if wa %}<a class="ad-wa" href="{{ wa }}" target="_blank" rel="noopener" title="Abrir el chat de WhatsApp">WhatsApp {{ pedido.cliente.cliente.telefono }}</a>{% else %}{{ pedido.cliente.cliente.telefono }}{% endif %}{% endif %}</p></div>
+  <div class="ad-head-acc">
+    {% if pedido.pagado_en %}<a class="ik-btn ik-btn-ghost" href="{% url 'panel:pedido_comprobante' pedido.pk %}" target="_blank"><span class="material-symbols-outlined">receipt_long</span>Comprobante de pago</a>{% endif %}
+    {% with sig=pedido.siguiente_estado %}{% if sig %}<form method="post" action="{% url 'panel:pedido_avanzar' pedido.pk %}">{% csrf_token %}<button class="ik-btn ik-btn-primary"><span class="material-symbols-outlined">arrow_forward</span>Marcar {{ sig.1|lower }}</button></form>{% endif %}{% endwith %}
+    {% if pedido.estado == 'PAGADO' or pedido.estado == 'PREPARANDO' or pedido.estado == 'LISTO' %}<button class="ik-btn ik-btn-danger" type="button" data-modal-abrir="cancelar">Cancelar pedido</button>{% endif %}
+  </div></div>
+
+<div class="ad-panel"><div class="ad-panel-b">
+  <span class="ik-est {{ pedido.clase_estado }}">{{ pedido.get_estado_display }}</span>{% if era_nuevo %} <span class="ik-est ik-est-nuevo">Nuevo</span>{% endif %}
+  {% if pedido.entregado_en %}<b class="ik-small" style="margin-left:.5rem">Entregado el {{ pedido.entregado_en|date:"d/m/Y" }} a las {{ pedido.entregado_en|date:"H:i" }}</b>{% endif %}
+  {% if pedido.pasos_timeline %}<ol class="ik-timeline">{% for nombre, hecho, actual in pedido.pasos_timeline %}<li class="{% if hecho %}done{% endif %} {% if actual %}now{% endif %}">{{ nombre }}</li>{% endfor %}</ol>{% endif %}
+  <p class="ik-caption" style="margin:.5rem 0 0">Creado {{ pedido.creado|date:"d/m/Y H:i" }}{% if pedido.pagado_en %} · pagado {{ pedido.pagado_en|date:"d/m/Y H:i" }}{% endif %}{% if pedido.mp_payment_id %} · operación Mercado Pago {{ pedido.mp_payment_id }}{% endif %}{% if pedido.mp_metodo %} · {{ pedido.metodo_legible }}{% endif %}</p>
+  {% if pedido.motivo_cancelacion %}<div class="ik-msg warning ik-mt">{{ pedido.motivo_cancelacion }}</div>{% endif %}
+  {% if pedido.reintegro_pendiente %}<div class="ik-msg error ik-mt">Hay que reintegrarle {{ pedido.total|pesos }} al cliente desde Mercado Pago.
+    <form method="post" action="{% url 'panel:pedido_reintegrado' pedido.pk %}" style="display:inline">{% csrf_token %}<button class="ik-btn ik-btn-link">Ya lo reintegré</button></form></div>{% endif %}
+  {% if pedido.notas %}<div class="ik-msg ik-mt">Nota del cliente: {{ pedido.notas }}</div>{% endif %}
+</div></div>
+
+<div class="ad-panel">
+  <div class="ad-panel-h"><h3>Piezas a entregar</h3><button class="ik-btn ik-btn-ghost ik-btn-sm no-print" type="button" onclick="window.print()"><span class="material-symbols-outlined">print</span>Imprimir</button></div>
+  <div class="ik-table-wrap"><table class="ik-table">
+    <thead><tr><th>Producto</th><th>Código de pieza</th><th>Tanda</th><th class="num">Peso</th><th class="num">$/kg</th><th class="num">Subtotal</th></tr></thead>
+    <tbody>
+    {% for it in pedido.items.all %}
+      {% for a in it.asignaciones.all %}
+      <tr><td>{% if forloop.first %}<b>{{ it.nombre }}</b> <span class="ik-caption">({{ it.cantidad }} u.)</span>{% endif %}</td>
+        <td><a href="{% url 'panel:tanda' a.pieza.tanda_id %}?pieza={{ a.pieza.codigo }}#p{{ a.pieza.codigo }}">{{ a.pieza.codigo|codigo }}</a></td>
+        <td><span class="ik-caption">{{ a.pieza.tanda.fecha_produccion|date:"d/m/Y" }}</span>{% if a.pieza.tanda.estado == 'PAUSADA' %} <span class="ik-est ik-est-pause">Pausada</span>{% endif %}</td>
+        <td class="num">{{ a.pieza.peso_g }} g</td><td class="num">{% if forloop.first %}{{ it.precio_kg|pesos }}{% endif %}</td><td class="num">{% if forloop.first %}<b>{{ it.subtotal|pesos }}</b>{% endif %}</td></tr>
+      {% empty %}
+      <tr><td><b>{{ it.nombre }}</b></td><td colspan="2" class="ik-muted">Sin piezas asignadas</td><td class="num">{{ it.peso_g }} g</td><td class="num">{{ it.precio_kg|pesos }}</td><td class="num">{{ it.subtotal|pesos }}</td></tr>
+      {% endfor %}
+    {% endfor %}
+    </tbody>
+  </table></div>
+  <div class="ad-panel-f"><b>Total {{ pedido.total|pesos }}</b></div>
+</div>
+
+<div class="ik-modal" id="cancelar" hidden>
+  <form class="ik-modal-box" method="post" action="{% url 'panel:pedido_cancelar' pedido.pk %}">{% csrf_token %}
+    <div class="ik-modal-h"><h3>Cancelar pedido #{{ pedido.numero }}</h3><button type="button" class="ik-btn ik-btn-icon" data-modal-cerrar aria-label="Cerrar"><span class="material-symbols-outlined">close</span></button></div>
+    <div class="ik-modal-b"><p class="ik-muted">El pedido ya está cobrado: después vas a tener que reintegrar {{ pedido.total|pesos }} desde Mercado Pago.</p>
+      <div class="ik-field"><label for="motivo-c">Motivo</label><textarea class="ik-textarea" id="motivo-c" name="motivo" required></textarea></div>
+      <label class="ik-check"><input type="checkbox" name="devolver" value="1" checked> Devolver las piezas al stock (destildá si se descartan)</label></div>
+    <div class="ik-modal-f"><button type="button" class="ik-btn ik-btn-ghost" data-modal-cerrar>Volver</button><button class="ik-btn ik-btn-danger">Cancelar pedido</button></div>
+  </form>
+</div>
+{% endblock %}

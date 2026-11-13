@@ -1,0 +1,20 @@
+{% load iurko %}
+{% if alertas.recetas_bajo %}
+<div class="ad-aviso">
+  <div class="ad-aviso-h"><span class="material-symbols-outlined">priority_high</span>
+    <div><b>Por qué aparece el aviso en Inventario</b><span>{{ alertas.recetas_bajo|length }} producto{{ alertas.recetas_bajo|length|pluralize }} de la tienda con poco stock</span></div></div>
+  <ul>
+    {% for r in alertas.recetas_bajo %}
+    <li>
+      <span class="ik-est ik-est-{{ r.gravedad }}">{% if r.stock %}{{ r.stock }} a la venta{% else %}Sin stock{% endif %}</span>
+      <div class="ad-aviso-txt"><b>{{ r.nombre }}</b> — {{ r.motivo }}{% if r.detalle %} <span class="ik-caption">({{ r.detalle }})</span>{% endif %}</div>
+      <div class="ad-aviso-acc">
+        <a class="ik-btn ik-btn-primary ik-btn-sm" href="{% url 'panel:tanda_nueva' %}?receta={{ r.pk }}">Cargar tanda</a>
+        <a class="ik-btn ik-btn-ghost ik-btn-sm" href="{% url 'panel:receta' r.pk %}" title="Cambiar el mínimo o sacarla de la tienda">Ajustar aviso</a>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  <p class="ik-caption" style="margin:0">El aviso salta cuando a un producto visible en la tienda le quedan menos piezas a la venta que el mínimo de su receta (“Avisar con menos de”). Las piezas que estacionan o están en tandas pausadas no cuentan.</p>
+</div>
+{% endif %}

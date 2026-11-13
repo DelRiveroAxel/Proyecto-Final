@@ -1,0 +1,36 @@
+{% load iurko %}
+<article class="ik-card">
+  <a class="ik-card-img {% if not r.stock %}sin-stock{% endif %}" href="{% url 'tienda:producto' r.slug %}">
+    {% with foto=r.foto_principal %}{% if foto %}<img src="{{ foto.url }}" alt="{{ r.nombre }}" loading="lazy">{% else %}<span class="ik-ph">{{ r.nombre|slice:":1" }}</span>{% endif %}{% endwith %}
+    {% if r.etiqueta %}<span class="ik-chip">{{ r.etiqueta }}</span>{% endif %}
+  </a>
+  <div class="ik-card-body">
+    <div class="ik-card-top"><span class="ik-eyebrow">{{ r.subtitulo|default:r.get_categoria_display }}</span></div>
+    <h3><a href="{% url 'tienda:producto' r.slug %}">{{ r.nombre }}</a></h3>
+    {% if r.descripcion %}<p class="ik-card-desc">{{ r.descripcion }}</p>{% endif %}
+    <div class="ik-card-meta"><span class="material-symbols-outlined">scale</span>{{ r.presentacion|default:"Pieza entera" }} · ≈ {{ r.peso_nominal_g|kg }}</div>
+    <div class="ik-card-stock">
+      {% if r.stock > 5 %}<span class="ik-est ik-est-ok">{{ r.stock }} piezas disponibles</span>
+      {% elif r.stock %}<span class="ik-est ik-est-warn">¡Últimas {{ r.stock }} piezas!</span>
+      {% elif r.proxima %}<span class="ik-est ik-est-info">Disponible desde el {{ r.proxima.fecha_disponible|date:"d/m" }}</span>
+      {% else %}<span class="ik-est ik-est-err">Sin stock</span>{% endif %}
+    </div>
+    <div class="ik-card-foot">
+      <small>Precio por kg</small><span class="ik-price">{{ r.precio_kg|pesos }}</span>
+      <div class="ik-caption">Pieza ≈ {{ r.precio_pieza_estimado|pesos }} · se cobra el peso real</div>
+      <div class="ik-card-actions">
+        {% if not user.is_authenticated %}
+          <a class="ik-btn ik-btn-primary" href="{% url 'login' %}?next={{ request.get_full_path|urlencode }}"><span class="material-symbols-outlined">login</span>{% if r.stock %}Ingresá para comprar{% else %}Ingresá para que te avisemos{% endif %}</a>
+        {% elif r.stock %}
+          <form method="post" action="{% url 'tienda:carrito_agregar' %}" class="ik-flex" data-qty-form>
+            {% csrf_token %}<input type="hidden" name="receta" value="{{ r.pk }}"><input type="hidden" name="volver" value="{{ request.get_full_path }}">
+            <div class="ik-qty"><button type="button" data-qty="-1" aria-label="Menos">−</button><input name="cantidad" value="1" inputmode="numeric" min="1" max="{{ r.stock }}" aria-label="Cantidad"><button type="button" data-qty="1" aria-label="Más">+</button></div>
+            <button class="ik-btn ik-btn-primary"><span class="material-symbols-outlined">add_shopping_cart</span>Agregar</button>
+          </form>
+        {% else %}
+          <a class="ik-btn ik-btn-ghost" href="{% url 'tienda:producto' r.slug %}"><span class="material-symbols-outlined">notifications</span>Avisame cuando haya</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</article>

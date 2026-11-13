@@ -1,0 +1,35 @@
+{% load iurko %}
+<div class="ad-panel">
+  <div class="ad-panel-h"><h3>{{ titulo|default:"A quién llegó" }}</h3>{% if personas %}<span class="ik-caption">{{ personas|length }} cliente{{ personas|length|pluralize }} · {{ pedidos|length }} pedido{{ pedidos|length|pluralize }}</span>{% endif %}</div>
+  {% if pedidos %}
+  <div class="ik-table-wrap"><table class="ik-table">
+    <thead><tr><th>Cliente</th><th>Contacto</th><th>Pedido</th><th>Piezas</th></tr></thead>
+    <tbody>{% for f in pedidos %}
+      <tr><td><b>{{ f.usuario.nombre_visible }}</b>{% if f.localidad %}<div class="ik-caption">{{ f.localidad }}</div>{% endif %}</td>
+        <td><div class="ad-traza-contacto">{% if f.usuario.email %}<a href="mailto:{{ f.usuario.email }}">{{ f.usuario.email }}</a>{% endif %}
+          {% if f.telefono %}{% whatsapp f.telefono "Hola, te escribimos de Iurko Chacinados por tu pedido #"|add:f.pedido.numero|add:"." as wa %}{% if wa %}<a class="ad-wa" href="{{ wa }}" target="_blank" rel="noopener">WhatsApp {{ f.telefono }}</a>{% else %}<span>{{ f.telefono }}</span>{% endif %}{% endif %}</div></td>
+        <td><a href="{% url 'panel:pedido' f.pedido.pk %}">#{{ f.pedido.numero }}</a> <span class="ik-est {{ f.pedido.clase_estado }}">{{ f.pedido.get_estado_display }}</span>
+          <div class="ik-caption">{% if f.pedido.pagado_en %}Pagado {{ f.pedido.pagado_en|date:"d/m/Y" }}{% else %}{{ f.pedido.creado|date:"d/m/Y" }} · todavía sin pagar{% endif %}{% if f.pedido.entregado_en %} · entregado {{ f.pedido.entregado_en|date:"d/m/Y" }}{% endif %}</div></td>
+        <td><div class="ad-traza-piezas">{% for p in f.piezas %}<span title="{{ p.tanda.receta.nombre }} · {{ p.peso_g|peso }}" {% if p.codigo == resaltar %}class="on"{% endif %}>{{ p.codigo|codigo }}</span>{% endfor %}</div></td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% elif fuera %}
+  <div class="ad-panel-b"><p class="ik-muted" style="margin:0">Ninguna pieza se vendió por la tienda web{% if desde_lote %} de estas tandas{% endif %}; las ventas por fuera de la web están abajo.</p></div>
+  {% else %}
+  <div class="ad-panel-b"><p class="ik-muted" style="margin:0">Todavía no se vendió ni reservó ninguna pieza{% if desde_lote %} de estas tandas{% endif %}.</p></div>
+  {% endif %}
+</div>
+{% if fuera %}
+<div class="ad-panel">
+  <div class="ad-panel-h"><h3>Vendidas por fuera de la web</h3><span class="ik-caption">{{ fuera|length }} pieza{{ fuera|length|pluralize }} · registradas a mano (WhatsApp, local, ferias)</span></div>
+  <div class="ik-table-wrap"><table class="ik-table">
+    <thead><tr><th>Canal / cliente</th><th>Fecha</th><th>Pieza</th><th class="num">Peso</th><th class="num">Importe</th></tr></thead>
+    <tbody>{% for p in fuera %}
+      <tr><td>{{ p.motivo_baja|cut:"Venta por fuera de la web · " }}</td><td>{{ p.venta_externa_fecha|date:"d/m/Y" }}</td>
+        <td><div class="ad-traza-piezas"><span title="{{ p.tanda.receta.nombre }} · {{ p.peso_g|peso }}" {% if p.codigo == resaltar %}class="on"{% endif %}>{{ p.codigo|codigo }}</span></div>
+          <div class="ik-caption"><a href="{% url 'panel:tanda' p.tanda_id %}#p{{ p.codigo }}">{{ p.tanda.receta.nombre }}</a></div></td>
+        <td class="num">{{ p.peso_g|peso }}</td><td class="num">{% if p.venta_externa_monto is not None %}{{ p.venta_externa_monto|pesos }}{% else %}—{% endif %}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+</div>
+{% endif %}

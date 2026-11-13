@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.pyc
+Final-env/
+.venv/
+venv/
+
+# Datos locales: no se suben al repositorio
+db.sqlite3
+media/
+privado/
+staticfiles/
+.env

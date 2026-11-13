@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block cuerpo %}
+{% with url=request.resolver_match.url_name %}
+<header class="ik-header">
+  <button class="ik-btn ik-btn-icon ik-burger" type="button" data-menu aria-label="Abrir menú"><span class="material-symbols-outlined">menu</span></button>
+  <a class="ik-logo" href="{% url 'tienda:catalogo' %}"><b>Iurko Chacinados</b></a>
+  <form class="ik-header-search ik-search" action="{% url 'tienda:catalogo' %}" method="get" role="search">
+    <span class="material-symbols-outlined">search</span>
+    <input type="search" name="q" value="{{ q|default:'' }}" placeholder="Buscar salame, bondiola, jamón…" aria-label="Buscar">
+  </form>
+  <div class="ik-acc">
+    <button class="ik-btn ik-btn-icon ik-theme ik-icon-keep" type="button" data-tema aria-label="Cambiar entre modo claro y oscuro">
+      <span class="material-symbols-outlined luna">dark_mode</span><span class="material-symbols-outlined sol">light_mode</span>
+    </button>
+    {% if user.is_authenticated %}
+      {% if user.is_staff %}
+        <a class="ik-btn ik-btn-ghost ik-btn-sm ik-icon-keep" href="{% url 'panel:inicio' %}">Ir al panel</a>
+      {% else %}
+        <a class="ik-btn ik-btn-icon ik-bell ik-icon-keep" href="{% url 'tienda:mis_pedidos' %}" aria-label="Avisos" title="Avisos de stock">
+          <span class="material-symbols-outlined">notifications</span>{% if avisos_nuevos %}<span class="ik-count">{{ avisos_nuevos|length }}</span>{% endif %}
+        </a>
+        <a class="ik-btn ik-btn-icon ik-cart-btn ik-icon-keep" href="{% url 'tienda:carrito' %}" aria-label="Carrito">
+          <span class="material-symbols-outlined">shopping_bag</span>{% if carrito_cantidad %}<span class="ik-count">{{ carrito_cantidad }}</span>{% endif %}
+        </a>
+      {% endif %}
+      <a class="ik-avatar ik-icon-keep" href="{% url 'clave_cambiar' %}" title="{{ user.nombre_visible }} · cambiar contraseña">{{ user.first_name|default:user.username|slice:":1"|upper }}{{ user.last_name|slice:":1"|upper }}</a>
+      <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="ik-btn ik-btn-icon ik-icon-keep" aria-label="Salir" title="Salir"><span class="material-symbols-outlined">logout</span></button></form>
+    {% else %}
+      <a href="{% url 'login' %}?next={{ request.path|urlencode }}">Iniciar sesión</a>
+      <a class="ik-btn ik-btn-primary ik-btn-sm ik-icon-keep" href="{% url 'registro' %}">Registrarse</a>
+    {% endif %}
+  </div>
+</header>
+
+<div class="ik-shell">
+  <aside class="ik-side" id="ik-side">
+    <div class="ik-side-grupo">Selección artesanal</div>
+    <a class="ik-side-link {% if url == 'catalogo' or url == 'producto' %}on{% endif %}" href="{% url 'tienda:catalogo' %}"><span class="material-symbols-outlined">storefront</span>Productos</a>
+    <a class="ik-side-link {% if url == 'carrito' or url == 'pago' %}on{% endif %}" href="{% url 'tienda:carrito' %}"><span class="material-symbols-outlined">shopping_bag</span>Mi carrito{% if carrito_cantidad %}<span class="ik-count">{{ carrito_cantidad }}</span>{% endif %}</a>
+    <a class="ik-side-link {% if url == 'mis_pedidos' or url == 'pedido' %}on{% endif %}" href="{% url 'tienda:mis_pedidos' %}"><span class="material-symbols-outlined">receipt_long</span>Mis pedidos y avisos</a>
+    <div class="ik-side-sep"></div>
+    <a class="ik-side-link {% if url == 'ayuda' %}on{% endif %}" href="{% url 'tienda:ayuda' %}"><span class="material-symbols-outlined">help_outline</span>Preguntas frecuentes</a>
+    <a class="ik-side-link {% if url == 'nosotros' %}on{% endif %}" href="{% url 'tienda:nosotros' %}"><span class="material-symbols-outlined">groups</span>Nosotros</a>
+    <a class="ik-side-link" href="{% url 'tienda:ayuda' %}#contacto"><span class="material-symbols-outlined">mail</span>Contacto</a>
+    {% if user.is_authenticated %}<a class="ik-side-link" href="{% url 'clave_cambiar' %}"><span class="material-symbols-outlined">key</span>Cambiar contraseña</a>{% endif %}
+    <div class="ik-side-pie"><span class="material-symbols-outlined">verified</span>Maestros chacinadores</div>
+  </aside>
+
+  <main class="ik-main">
+    {% if messages %}<div class="ik-msgs">{% for m in messages %}<div class="ik-msg {{ m.tags }}">{{ m }}</div>{% endfor %}</div>{% endif %}
+    {% if avisos_nuevos and url != 'mis_pedidos' %}
+      <div class="ik-msgs"><div class="ik-msg success">Volvió a haber
+        {% for a in avisos_nuevos %}<a href="{% url 'tienda:producto' a.receta.slug %}"><b>{{ a.receta.nombre }}</b></a>{% if not forloop.last %}, {% endif %}{% endfor %}. ¡Pedilo antes de que se termine!</div></div>
+    {% endif %}
+    {% block contenido %}{% endblock %}
+  </main>
+</div>
+
+<footer class="ik-footer"><div class="in">
+  <span><span class="logo">Iurko Chacinados</span> · © {% now "Y" %} · Tradición &amp; calidad</span>
+  <nav><a href="{% url 'tienda:nosotros' %}">Nosotros</a><a href="{% url 'tienda:ayuda' %}">Preguntas frecuentes</a><a href="{% url 'tienda:ayuda' %}#pagos">Pagos</a></nav>
+</div></footer>
+{% endwith %}
+{% endblock %}

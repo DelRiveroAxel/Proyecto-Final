@@ -1,0 +1,28 @@
+{% load iurko %}
+{% if alertas.vencen %}
+<div class="ad-aviso ad-aviso-venc {% if alertas.vencidas %}urg{% endif %}">
+  <div class="ad-aviso-h"><span class="material-symbols-outlined">event_busy</span>
+    <div><b>{% if alertas.vencidas %}Hay tandas vencidas con piezas en cámara{% else %}Tandas que se están por vencer{% endif %}</b>
+      <span>{{ alertas.vencen|length }} tanda{{ alertas.vencen|length|pluralize }} · vendé primero estas piezas o dalas de baja si ya vencieron</span></div></div>
+  <ul>
+    {% for t in alertas.vencen %}
+    <li>
+      {% if t.vencida %}<span class="ik-est ik-est-err">Vencida el {{ t.fecha_vencimiento|date:"d/m" }}</span>
+      {% elif t.dias_para_vencer == 1 %}<span class="ik-est ik-est-warn">Vence mañana</span>
+      {% else %}<span class="ik-est ik-est-warn">Vence en {{ t.dias_para_vencer }} días</span>{% endif %}
+      <div class="ad-aviso-txt"><b>{{ t.receta.nombre }}</b> · tanda <a href="{% url 'panel:tanda' t.pk %}">{{ t.codigo|codigo }}</a> —
+        {{ t.libres }} pieza{{ t.libres|pluralize }} libre{{ t.libres|pluralize }} ({{ t.libres_g|default:0|kg }}).
+        {% if t.vencida %}Ya no se vende en la tienda.{% else %}Consumir antes del {{ t.fecha_vencimiento|date:"d/m/Y" }}; desde ese día deja de venderse sola.{% endif %}</div>
+      <div class="ad-aviso-acc">
+        {% if t.vencida %}
+        <form method="post" action="{% url 'panel:tanda_baja_vencidas' t.pk %}">{% csrf_token %}<input type="hidden" name="volver" value="{{ request.get_full_path }}">
+          <button class="ik-btn ik-btn-primary ik-btn-sm" title="Marca las piezas libres como baja (merma) con el motivo 'Vencida'">Dar de baja {{ t.libres }}</button></form>
+        {% endif %}
+        <a class="ik-btn ik-btn-ghost ik-btn-sm" href="{% url 'panel:tanda' t.pk %}#vencimiento">{% if t.vencida %}Cambiar fecha{% else %}Ver tanda{% endif %}</a>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  <p class="ik-caption" style="margin:0">El aviso aparece cuando falta lo que dice la receta en “Avisar antes del vencimiento” (por defecto 7 días). Es solo un aviso acá en el panel: no se manda ningún correo.</p>
+</div>
+{% endif %}

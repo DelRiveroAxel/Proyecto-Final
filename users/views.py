@@ -1,36 +1,73 @@
-from django.shortcuts import render, redirect #importo la funcion render para renderizar las vistas y redirect para redireccionar a otras vistas
-from django.contrib import authenticate, login, logout #importo las funciones de autenticacion de django
-from django.contrib.auth.decorators import login_required #importo el decorador login_required para proteger las vistas que requieren autenticacion
-from django.contrib import messages #importo la clase messages para mostrar mensajes en las vistas
-from .forms import loginForm #importo el formulario de login que cree en forms.py
-from .models import UserRole, Role #importo los modelos de usuario y rol que cree en models.py
+from django.contrib import messages
+from django.contrib.auth import login, logout, update_session_auth_hash
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import redirect, render
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.http import require_POST
+
+from .forms import CambiarClaveForm, LoginForm, RegistroForm
 
 
-def login_view(request): #creo la vista para el login
-    if request.user.is_authenticated:       #si el usuario ya esta autenticado
-        return redirect('dashboard')        #redirecciono a la vista dashboard
+def _destino(request, user):
+    """A dónde mandar al usuario después de entrar."""
+    nxt = request.POST.get('next') or request.GET.get('next')
+    if nxt and url_has_allowed_host_and_scheme(nxt, allowed_hosts={request.get_host()}):
+        return nxt
+    return 'panel:inicio' if user.is_staff else 'tienda:catalogo'
 
-    if request.method == 'POST':            #si el metodo de la peticion es POST
-        form = loginForm(request, data=request.POST) #creo una instancia del formulario de login con los datos del POST
-        if form.is_valid():                   #si el formulario es valido
-            username = form.cleaned_data.get('username')    #obtengo el nombre de usuario del formulario
-            password = form.cleaned_data.get('password')    #obtengo la contraseña del formulario
-            user = authenticate(request, username=username, password=password) #autentico al usuario con los datos del formulario
-            
-            if user is not None:              #si el usuario existe
-                login(request, user)          #inicio sesion con el usuario autenticado
-                return redirect('dashboard')   #redirecciono a la vista dashboard
 
-            else:                               #si el usuario no existe
-                messages.error(request, 'Usuario o contraseña incorrectos') #muestro un mensaje de error
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect(_destino(request, request.user))
 
-        else:                                   #si el metodo de la peticion no es POST
-            form = loginForm()                 #creo una instancia vacia del formulario de login
+    if request.method == 'POST':
+        form = LoginForm(request, data=request.POST)
+        if form.is_valid():                  # AuthenticationForm ya autenticó al usuario
+            user = form.get_user()
+            login(request, user)
+            if not form.cleaned_data.get('remember'):
+                request.session.set_expiry(0)  # se cierra al cerrar el navegador
+            return redirect(_destino(request, user))
+    else:
+        form = LoginForm(request)            # GET: formulario vacío
 
-        return render(request, 'users/login.html', {'form': form}) #renderizo la vista de login con el formulario
+    return render(request, 'users/login.html', {'form': form, 'next': request.GET.get('next', '')})
 
-@login_required(login_url='login') #decorador para proteger la vista, si el usuario no esta autenticado lo redirecciona a la vista de login
-def  logout_view(request): #creo la vista para el logout
-    logout(request) #cierro la sesion del usuario
-    messages.success(request, 'Has cerrado sesión correctamente') #muestro un mensaje de exito
-    return redirect('login') #redirecciono a la vista de login
+
+def registro_view(request):
+    if request.user.is_authenticated:
+        return redirect('tienda:catalogo')
+
+    if request.method == 'POST':
+        form = RegistroForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            messages.success(request, f'¡Bienvenido/a, {user.first_name}! Ya podés hacer tus pedidos.')
+            return redirect(_destino(request, user))
+    else:
+        form = RegistroForm()
+
+    return render(request, 'users/registro.html', {'form': form, 'next': request.GET.get('next', '')})
+
+
+@require_POST
+def logout_view(request):
+    logout(request)
+    return redirect('tienda:catalogo')
+
+
+@login_required
+def inicio_segun_rol(request):
+    return redirect('panel:inicio' if request.user.is_staff else 'tienda:catalogo')
+
+
+@login_required
+def cambiar_clave(request):
+    form = CambiarClaveForm(request.user, request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        update_session_auth_hash(request, form.user)   # no lo deslogueamos
+        messages.success(request, 'Listo, tu contraseña se cambió.')
+        return redirect('panel:inicio' if request.user.is_staff else 'tienda:mis_pedidos')
+    return render(request, 'users/clave_cambiar.html', {'form': form})

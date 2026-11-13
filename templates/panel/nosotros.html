@@ -1,0 +1,36 @@
+{% extends "panel/base_panel.html" %}
+{% block titulo_panel %}Página Nosotros{% endblock %}{% block titulo_top %}Página "Nosotros" de la tienda{% endblock %}
+{% block contenido %}
+<div class="ad-head"><div><h1>Página “Nosotros”</h1><p>Lo que ven los clientes en la pestaña Nosotros. Reemplazá los textos de ejemplo, sobre todo lo que está entre [corchetes].</p></div>
+  <div class="ad-head-acc"><a class="ik-btn ik-btn-ghost" href="{% url 'tienda:nosotros' %}" target="_blank"><span class="material-symbols-outlined">visibility</span>Ver cómo queda</a></div></div>
+<form method="post" enctype="multipart/form-data" class="ik-form" novalidate>
+  {% csrf_token %}
+  <div class="ad-cols">
+    <div class="ad-panel">
+      <div class="ad-panel-h"><h3>Textos</h3></div>
+      <div class="ad-panel-b">
+        {% for campo in form %}{% if campo.name in "titulo bajada anio_fundacion historia mision valores equipo" %}
+        <div class="ik-field {% if campo.errors %}has-error{% endif %}"><label for="{{ campo.id_for_label }}">{{ campo.label|capfirst }}</label>{{ campo }}
+          {% if campo.errors %}<span class="ik-error">{{ campo.errors|join:" " }}</span>{% elif campo.help_text %}<span class="ik-hint">{{ campo.help_text }}</span>{% endif %}</div>
+        {% endif %}{% endfor %}
+      </div>
+    </div>
+    <div>
+      <div class="ad-panel">
+        <div class="ad-panel-h"><h3>Foto</h3></div>
+        <div class="ad-panel-b">{% if pagina.foto %}<img src="{{ pagina.foto.url }}" alt="" style="width:100%;max-height:220px;object-fit:cover;border-radius:.75rem;margin-bottom:.75rem">{% endif %}
+          <label class="ik-file"><span class="material-symbols-outlined">add_photo_alternate</span><b>{% if pagina.foto %}Cambiar foto{% else %}Subir foto{% endif %}</b><span class="ik-caption">De la familia, la bodega o el secadero</span>{{ form.foto }}</label></div>
+      </div>
+      <div class="ad-panel">
+        <div class="ad-panel-h"><h3>Contacto</h3></div>
+        <div class="ad-panel-b">
+          {% for campo in form %}{% if campo.name in "direccion horario telefono mensaje_whatsapp email instagram facebook" %}
+          <div class="ik-field {% if campo.errors %}has-error{% endif %}"><label for="{{ campo.id_for_label }}">{{ campo.label|capfirst }}</label>{{ campo }}{% if campo.errors %}<span class="ik-error">{{ campo.errors|join:" " }}</span>{% elif campo.name == 'telefono' %}<span class="ik-hint">Con característica, sin 0 ni 15. Ej.: 3755 412345. Lo usa el botón de WhatsApp.</span>{% elif campo.help_text %}<span class="ik-hint">{{ campo.help_text }}</span>{% endif %}</div>
+          {% endif %}{% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="ik-flex" style="justify-content:flex-end"><button class="ik-btn ik-btn-primary"><span class="material-symbols-outlined">save</span>Guardar cambios</button></div>
+</form>
+{% endblock %}

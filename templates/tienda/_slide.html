@@ -1,0 +1,9 @@
+{# Una diapositiva del carrusel. La usan la tienda y la vista previa del panel (data-prev-*). #}
+<div class="ik-hero-slide {% if on %}on{% endif %}" data-prev-fondo {% if foto %}style="background-image:url('{{ foto.url }}')"{% endif %}>
+  <div class="ik-hero-body">
+    <span class="ik-eyebrow" data-prev-etiqueta-caja {% if not etiqueta %}hidden{% endif %}><span class="material-symbols-outlined" style="font-size:1rem" data-prev-icono {% if not icono %}hidden{% endif %}>{{ icono }}</span><span data-prev-etiqueta>{{ etiqueta }}</span></span>
+    <h2 data-prev-titulo>{{ titulo }}</h2>
+    <p data-prev-texto {% if not texto %}hidden{% endif %}>{{ texto }}</p>
+    <a class="ik-btn ik-btn-salumi ik-btn-sm" href="{{ enlace|default:'#' }}" data-prev-boton {% if not boton %}hidden{% endif %}><span data-prev-boton-texto>{{ boton }}</span> <span class="material-symbols-outlined">arrow_forward</span></a>
+  </div>
+</div>

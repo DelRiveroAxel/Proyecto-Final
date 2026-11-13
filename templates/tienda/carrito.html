@@ -1,0 +1,51 @@
+{% extends "tienda/base_tienda.html" %}
+{% load iurko %}
+{% block titulo %}Mi carrito · Iurko Chacinados{% endblock %}
+{% block contenido %}
+<div class="ik-pagehead"><div><div class="ik-crumbs">Tienda / <b>Mi carrito</b></div><h1>Mi carrito</h1>
+  <p>Las piezas se reservan recién cuando generás el QR: desde ese momento tenés {{ qr_minutos }} minutos para pagar.</p></div></div>
+
+{% if carrito.filas %}
+<div class="ik-cart">
+  <div class="ik-cart-list">
+    {% for f in carrito.filas %}
+    <div class="ik-cart-item">
+      {% if f.receta.foto %}<img src="{{ f.receta.foto.url }}" alt="">{% else %}<span class="ik-ph" style="width:84px;height:84px;border-radius:.75rem">{{ f.receta.nombre|slice:":1" }}</span>{% endif %}
+      <div>
+        <h4><a href="{% url 'tienda:producto' f.receta.slug %}" style="color:inherit">{{ f.receta.nombre }}</a></h4>
+        <span class="ik-caption">{{ f.item.cantidad }} pieza{{ f.item.cantidad|pluralize }} · ≈ {{ f.peso_g|kg }} · {{ f.receta.precio_kg|pesos }}/kg</span>
+        {% if f.falta %}<span class="ik-est ik-est-err" style="margin-top:.35rem">{% if f.disponibles %}Solo quedan {{ f.disponibles }}{% else %}Se agotó{% endif %}</span>{% endif %}
+      </div>
+      <form method="post" action="{% url 'tienda:carrito_actualizar' f.item.pk %}" data-qty-form data-autosubmit>
+        {% csrf_token %}
+        <div class="ik-qty"><button type="button" data-qty="-1" aria-label="Menos">−</button><input name="cantidad" value="{{ f.item.cantidad }}" inputmode="numeric" min="0" max="{{ f.disponibles }}" aria-label="Cantidad"><button type="button" data-qty="1" aria-label="Más" {% if f.item.cantidad >= f.disponibles %}disabled{% endif %}>+</button></div>
+      </form>
+      <div class="ik-sub">{{ f.subtotal|pesos }}</div>
+      <form method="post" action="{% url 'tienda:carrito_quitar' f.item.pk %}">{% csrf_token %}
+        <button class="ik-btn ik-btn-icon ik-quitar" aria-label="Quitar {{ f.receta.nombre }}" title="Quitar"><span class="material-symbols-outlined">delete</span></button></form>
+    </div>
+    {% endfor %}
+  </div>
+
+  <aside class="ik-resumen">
+    <h3>Resumen</h3>
+    <dl>
+      <div><dt>Piezas</dt><dd>{{ carrito.cantidad }}</dd></div>
+      <div><dt>Envío / retiro</dt><dd>A coordinar</dd></div>
+      <div class="ik-total"><dt>Total estimado</dt><dd>{{ carrito.total|pesos }}</dd></div>
+    </dl>
+    <form method="post" action="{% url 'tienda:checkout' %}">
+      {% csrf_token %}
+      <div class="ik-field ik-mt" style="margin-bottom:0"><label for="notas">Notas para el productor (opcional)</label>
+        <textarea class="ik-textarea" id="notas" name="notas" rows="2" style="min-height:70px" placeholder="Ej.: retiro el sábado a la mañana"></textarea></div>
+      <button class="ik-btn ik-btn-mp ik-btn-block ik-btn-lg" {% if carrito.hay_faltante %}disabled{% endif %}><span class="material-symbols-outlined">qr_code_2</span>Pagar con Mercado Pago</button>
+    </form>
+    {% if carrito.hay_faltante %}<p class="ik-nota" style="color:var(--err-fg)"><span class="material-symbols-outlined">error</span>Ajustá las cantidades marcadas en rojo para poder pagar.</p>{% endif %}
+    <p class="ik-nota"><span class="material-symbols-outlined">info</span>El total final es el peso exacto de las piezas que te reservamos (se muestra antes de pagar).</p>
+  </aside>
+</div>
+{% else %}
+<div class="ik-vacio"><span class="material-symbols-outlined">shopping_bag</span><h3>Tu carrito está vacío</h3>
+  <p>Mirá lo que salió de la última tanda.</p><a class="ik-btn ik-btn-primary" href="{% url 'tienda:catalogo' %}">Ver productos</a></div>
+{% endif %}
+{% endblock %}
