@@ -17,7 +17,14 @@ python manage.py runserver
 
 - Tienda: http://127.0.0.1:8000/
 - Panel del productor: http://127.0.0.1:8000/panel/
-- Usuarios de ejemplo (con `cargar_demo`): **productor / Iurko2026!** y **cliente / Iurko2026!**
+- Usuarios de ejemplo (con `cargar_demo`), todos con clave **Iurko2026!**:
+  - **productor**: entra al panel de gestión.
+  - **cliente**, **martin** y **sofia**: clientes de la tienda.
+- `cargar_demo` deja ejemplos de todo lo que muestra el sistema: 6 recetas y 7 tandas (una por vencer,
+  una pausada, una agotada y otra estacionándose), pedidos en cada estado (pagado, preparando, listo para
+  retirar y entregado), ventas por fuera de la web, una baja, un “avisame cuando haya” y una consulta sin
+  responder. Solo carga datos si la base no tiene recetas; para empezar de cero, borrar `db.sqlite3` y
+  correr de nuevo `migrate` y `cargar_demo`.
 - Para crear el productor real: `python manage.py createsuperuser` (queda con acceso al panel).
 
 ## Cómo funciona

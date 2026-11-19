@@ -891,3 +891,30 @@ class VentaFueraDeLaWebTests(Base):
         with self.assertRaises(ValidationError):
             vender_fuera_de_web(self.t, [self.piezas[0].pk], 'WhatsApp', fecha=hoy_)
         self.assertEqual(vender_fuera_de_web(self.t, [self.piezas[0].pk], 'WhatsApp', fecha=hoy_ - timedelta(days=5)), 1)
+
+
+@override_settings(MEDIA_ROOT=MEDIA_TMP, PRIVATE_MEDIA_ROOT=MEDIA_TMP)
+class CargarDemoTests(TestCase):
+    """El comando de datos de ejemplo tiene que funcionar con una base vacía."""
+
+    def test_carga_ejemplos_de_todo(self):
+        from io import StringIO
+
+        from django.core.files.storage import FileSystemStorage
+        from django.core.management import call_command
+
+        from core.models import ConsultaContacto
+        campo = CompraMateriaPrima._meta.get_field('comprobante')
+        with mock.patch.object(campo, 'storage', FileSystemStorage(location=MEDIA_TMP)):   # tickets de prueba a una carpeta temporal
+            call_command('cargar_demo', stdout=StringIO())
+        self.assertEqual(set(Pedido.objects.values_list('estado', flat=True)),
+                         {Pedido.PAGADO, Pedido.PREPARANDO, Pedido.LISTO, Pedido.ENTREGADO})
+        self.assertTrue(any(t.por_vencer for t in Tanda.objects.all()))
+        self.assertTrue(Tanda.objects.filter(estado=Tanda.PAUSADA).exists())
+        self.assertEqual(Pieza.objects.filter(venta_externa_fecha__isnull=False).count(), 6)
+        self.assertTrue(Pieza.objects.filter(estado=Pieza.BAJA).exists())
+        self.assertEqual(AvisoStock.objects.count(), 1)
+        self.assertEqual(ConsultaContacto.objects.count(), 1)
+        # una segunda vez no duplica nada
+        call_command('cargar_demo', stdout=StringIO())
+        self.assertEqual(Pedido.objects.count(), 4)
