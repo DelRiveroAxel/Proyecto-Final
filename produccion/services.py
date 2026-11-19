@@ -210,7 +210,7 @@ def vender_fuera_de_web(tanda, ids, canal, cliente='', fecha=None, importe=None)
     if not piezas:
         return 0
     detalle = f'Venta por fuera de la web · {canal}' + (f' · {cliente.strip()}' if cliente and cliente.strip() else '')
-    precio_kg = tanda.receta.precio_kg or Decimal('0')
+    precio_kg = Decimal(str(tanda.receta.precio_kg or 0))
     if importe is None:
         montos = [(precio_kg * p.peso_g / 1000).quantize(Decimal('1'), ROUND_HALF_UP) for p in piezas]
     else:
